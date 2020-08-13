@@ -21,7 +21,7 @@ What we know:
     - On the bad luck side
         1: death
         2: divorce
-        3: tbd
+        3: event/relationship card 
         4: tbd
         5: tbd
         6: tbd
