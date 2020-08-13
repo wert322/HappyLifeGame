@@ -20,7 +20,7 @@ What we know:
         6: tbd
     - On the bad luck side
         1: death
-        2: tbd
+        2: divorce
         3: tbd
         4: tbd
         5: tbd
