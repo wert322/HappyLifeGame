@@ -7,7 +7,7 @@ What we know:
     - begins at start
     - alternates between lucky, !, bad luck, !
     - ends at goal
-- every turn, move forward by using a standard die
+- Every turn, move forward by using a standard die
     - land on lucky or bad luck card: roll again to determine what happens
     - land on ! card: tbd
 - Victory: player who reaches goal with most money wins
@@ -41,3 +41,8 @@ What we know:
             - Allows you entrance into a prestigious university (Stanford)
         2. Can't trust men card
             - Prevents the player from marrying guys
+- Possible problems to consider
+    1. Landing on a child square without being married
+    2. Landing on married square if you are already married
+    3. If you obtain a "Distrusts men" card but there are no other female players
+    4. There is nobody available to marry
