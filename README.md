@@ -24,7 +24,6 @@ What we know:
     - On the bad luck side
         1. Traffic incident
             - Possibility of instant death
-        2. 
     - Event cards
         1. School event
             - Choose between studying or going, studying yields "SWOT/Nerd card"
