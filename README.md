@@ -10,20 +10,35 @@ What we know:
 - every turn, move forward by using a standard die
     - land on lucky or bad luck card: roll again to determine what happens
     - land on ! card: tbd
-- 10 types of cards
-    - On the lucky side
-        1: marriage card
-        2: pet card
-        3: prob some cash card
-        4: tbd
-        5: tbd
-        6: tbd
-    - On the bad luck side
-        1: death
-        2: divorce
-        3: event/relationship card 
-        4: tbd
-        5: tbd
-        6: tbd
 - Victory: player who reaches goal with most money wins
 - First to reach the goal gets a bonus 100 million yen
+- 10 types of cards
+- Known cards
+    - On the lucky side
+        1. Scammed but won lawsuit for 10 million yen
+            - Gained "Distrusts men" trait card
+        2. Company they founded was successful
+            - 10 million yen
+        3. Company they founded is listed on stock exchange
+            - 100 million yen
+    - On the bad luck side
+        1. Traffic incident
+            - Possibility of instant death
+        2. 
+    - Event cards
+        1. School event
+            - Choose between studying or going, studying yields "SWOT/Nerd card"
+        2. Late divorce from cheating husband
+            - Husband has to pay 20 million yen per kid as child support
+        3. Have children
+            - 100 thousand yen from the other competitors as a gift
+            - Apparently too many children cards 
+        4. Marriage
+            - Requires all other players to gift 50000 yen as a wedding gift
+    - Unknown cards
+        1. Some kind of pet card
+    - Trait cards
+        1. Nerd/SWOT card
+            - Allows you entrance into a prestigious university (Stanford)
+        2. Can't trust men card
+            - Prevents the player from marrying guys
