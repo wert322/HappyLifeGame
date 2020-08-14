@@ -1,5 +1,13 @@
+/*
+color scheme:
+#eab0d9
+#f1c6de
+#f7e8f0
+*/
+
 body {
-    background-color:plum;
+    background-color: #f1c6de;
+    margin: 0;
 }
 
 h1 {
@@ -7,7 +15,36 @@ h1 {
     text-align: center;
 }
 
-.button {
-    padding: 10px;
-    color: blue;
+/* buttons */
+button {
+    padding: 12px 28px;
+    background-color: #f7e8f0;
+    border-radius: 12px;
+    font-size: 15px;
+    border: 0px;
+}
+
+/* top navigation bar */
+.topnav {
+    background-color: black;
+    overflow: hidden;
+}
+
+.topnav a {
+    float: left;
+    color: #fff;
+    text-align: center;
+    padding: 16px 24px;
+    text-decoration: none;
+    font-size: 18px;
+}
+
+.topnav a:hover {
+    background-color: #dedede;
+    color: black;
+}
+
+.topnav a.active {
+    background-color: #eab0d9;
+    color: black;
 }
