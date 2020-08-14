@@ -6,9 +6,10 @@ function initialize() {
     });
     peer.on('connection', function(conn) {
         alert('We have liftoff');
+        var phrase = prompt('Type your message here');
         conn.on('open', function() {
             alert('The message was sent');
-            conn.send('Hello World');
+            conn.send(phrase);
         });
     });
 }
@@ -19,7 +20,7 @@ function joint() {
 
     conn.on('open', function() {
         conn.on('data', function(data) {
-            alert('Got something');
+            alert('Received this message: ' + data);
             console.log(data);
         });
     });
