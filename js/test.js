@@ -46,8 +46,15 @@ function joint() {
     server();
     peer.on('open', function(){
         alert('I am here at least');
+        alert(dID);
         dID = prompt('Input your host\'s ID:');
+        alert(conn);
         conn = peer.connect(dID);
+        if (conn === null) {
+            alert('not working');
+        } else {
+            alert(conn.open);
+        }
         alert(dID);
         conn.on('open', function() {
             alert('Conn working');
