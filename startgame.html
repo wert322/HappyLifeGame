@@ -8,10 +8,10 @@
     <body>
         <!--Header-->
         <div class = "topnav">
-            <a class="active" href="index.html">Home</a>
+            <a href="index.html">Home</a>
             <a href="rules.html">Rules</a>
             <a href="about.html">About</a>
-            <a href="startgame.html">Start Game</a>
+            <a class="active" href="startgame.html">Start Game</a>
         </div>
         <!--end of Header-->
         <h1>Happy Life Game!</h1>
@@ -20,7 +20,11 @@
         </div>
         <br>
         <div style = "text-align: center;">
-            <input type="button" onclick="joint();" id="btn" value="Join Lobby"></input>
+            <form>
+                <label for="hostID">Host's ID:</label>
+                <input type="text" name="hostIDForm" value="Enter the Host's ID" onclick="this.value='';">
+                <input type="button" onclick="joint();" id="btn" value="Join Lobby"></input>
+            </form>
         </div>
         <canvas id="gameScreen" width="800px" height="600px"></canvas>
         <input type="button" onclick="rollDie();" id="btn" value="Roll Die"></input>

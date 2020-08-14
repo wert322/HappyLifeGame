@@ -21,18 +21,12 @@ function server() {
 }
 
 function initialize() {
-    server();
+    server()
     peer.on('open', function() {
+        alert('My peer ID is: ' + dID);
         document.getElementById("hostID").innerHTML = dID;
     });
-    alert(dID);
-    peer.on('connection', function(incoming) {
-        /*if(conn) {
-            incoming.close();
-            alert('connection is closed');
-            return;
-        }*/
-        conn = incoming;
+    peer.on('connection', function(conn) {
         alert('We have liftoff');
         var phrase = prompt('Type your message here');
         conn.on('open', function() {
@@ -43,31 +37,24 @@ function initialize() {
 }
 
 function joint() {
-    server();
-    peer.on('open', function(){
-        alert('I am here at least');
-        alert(dID);
-        dID = prompt('Input your host\'s ID:');
-        alert(conn);
-        conn = peer.connect(dID);
-        if (conn === null) {
-            alert('not working');
-        } else {
-            alert(conn.open);
+    server()
+    peer.on('open', function() {
+        dID = document.getElementsByName("hostIDForm")[0].value;
+        if (dID == "" || dID == "Enter the Host's ID") {
+            dID = prompt("Input your host's ID:");
         }
-        alert(dID);
+        conn = peer.connect(dID);
         conn.on('open', function() {
-            alert('Conn working');
             conn.on('data', function(data) {
                 alert('Received this message: ' + data);
-                console.log(data);
             });
         });
     });
 }
 
+/*
 function readySwitch() {
-    var testelm = document.getElementById("testButton");
+    var testelm = document.getElementById("testButton"); //renamed this btw
     if (testelm.value=="Not Ready") {
         testelm.value = "Ready";
         alert('we here');
@@ -84,4 +71,4 @@ function readySwitch() {
             conn.send(false);
         });
     }
-}
+}*/
