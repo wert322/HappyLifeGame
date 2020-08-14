@@ -30,7 +30,7 @@ p {
 }
 
 /* buttons */
-button {
+#btn {
     margin: 10px;
     padding: 12px 28px;
     background-color: #f7e8f0;

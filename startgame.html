@@ -16,16 +16,14 @@
         <!--end of Header-->
         <h1>Happy Life Game!</h1>
         <div style = "text-align: center;">
-            <button type="button" onclick="initialize();">Create lobby</button>
+            <input type="button" onclick="initialize();" id="btn" value="Create Lobby"></input>
         </div>
         <br>
         <div style = "text-align: center;">
-            <button type="button" onclick="joint();">
-                Join lobby
-            </button>
+            <input type="button" onclick="joint();" id="btn" value="Join Lobby"></input>
         </div>
         <canvas id="gameScreen" width="800px" height="600px"></canvas>
-        <button type="button" onclick="rollDie();">Roll Die</button>
+        <input type="button" onclick="rollDie();" id="btn" value="Roll Die"></input>
         <div>
             <p>Your Host ID is: <span id="hostID"></span></p>
         </div>
