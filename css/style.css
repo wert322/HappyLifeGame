@@ -39,6 +39,12 @@ button {
     border: 0px;
 }
 
+/* game screen */
+#gameScreen {
+    margin: 2% 10%;
+    border: 1px solid
+}
+
 /* header */
 .topnav {
     background-color: #18181a;
