@@ -2,7 +2,7 @@ var peer = new Peer();
 
 function initialize() {
     peer.on('open', function(id) {
-        alert('My peer ID is: ' + id);
+        document.getElementById("hostID").innerHTML = id;
     });
     peer.on('connection', function(conn) {
         alert('We have liftoff');
