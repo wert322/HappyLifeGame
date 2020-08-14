@@ -17,18 +17,15 @@ function initialize() {
 function joint() {
     var dID = prompt('Input your host\'s ID:');
     var conn = peer.connect(dID);
-
     conn.on('open', function() {
         conn.on('data', function(data) {
             alert('Received this message: ' + data);
             console.log(data);
         });
     });
-    
-      
-    /*if(conn.open) {   
-        alert('made it ');
-    } else {
-        alert('nope');
-    }*/
+}
+
+function readySwitch() {
+    var testelm = document.getElementById("testButton");
+    if (Element.value="")
 }
