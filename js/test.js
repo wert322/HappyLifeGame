@@ -27,5 +27,19 @@ function joint() {
 
 function readySwitch() {
     var testelm = document.getElementById("testButton");
-    if (Element.value="")
+    if (testelm.value=="Not Ready") {
+        testelm.value = "Ready";
+        alert('we here');
+        conn.on('open', function() {
+            alert('Test');
+            conn.send(true);
+        });
+    } else{
+        testelm.value = "Not Ready";
+        alert('We not here');
+        conn.on('open', function() {
+            alert('Test2');
+            conn.send(false);
+        });
+    }
 }
