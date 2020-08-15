@@ -1,23 +1,31 @@
 {
   "name": "happylifegame",
   "version": "1.0.0",
+  "engines": {
+    "node": "12.x"
+  },
   "description": "This is the Happy Life Game.",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server",
+    "dev": "nodemon server"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wert322/HappyLifeGame.git"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/wert322/HappyLifeGame/issues"
   },
   "homepage": "https://github.com/wert322/HappyLifeGame#readme",
   "dependencies": {
     "express": "^4.17.1",
+    "moment": "^2.27.0",
     "socket.io": "^2.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
   }
 }
