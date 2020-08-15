@@ -16,8 +16,7 @@ color scheme:
 body {
     background-color: #f1c6de;
     height: 100%;
-    min-height: 100%;
-    place-items: center;
+    min-height: 100%;s
 }
 
 h1 {
@@ -53,16 +52,24 @@ input[type=text] {
 }
 
 /* chat */
-#chat-container {
-    min-width: 800px;
-    max-width: 1000px;
-    max-height: 800px;
-    height: 95vh;
+#chatbox {
+    text-align: left;
+    margin: 0 auto;
+    margin-bottom: 25px;
+    padding: 10px;
+    width: 430px;
+    height: 270px;
     background-color: #f7e8f0;
+    border: 1px;
     border-radius: 10px;
+    overflow: auto;
+}
+#chat-history {
+    font-size: 11px;
+    min-height: 100px;
 }
 
-#new-message-container {
+#new-message-box {
     border-top: 1px solid gray;
     border-radius: 0 0 0 10px;
 }

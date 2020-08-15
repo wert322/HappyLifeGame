@@ -1,3 +1,8 @@
+var app = express();
+var server = require('http').createServer(app).listen(8080);
+var io = require('socket.io').listen(server);
+
+/* old code is this
 var peer = new Peer();
 var conn = null;
 var dID = null;
@@ -25,7 +30,7 @@ function initialize() {
     server()
     peer.on('open', function() {
         alert('My peer ID is: ' + dID);
-        document.getElementById("hostID").innerHTML = dID;
+        document.getElementById("hostIDPlaceholder").innerHTML = dID;
         username = document.getElementsByName("usernameForm")[0].value;
     });
     peer.on('connection', function(conn) {
@@ -54,7 +59,7 @@ function joint() {
     });
 }
 
-/*
+
 function readySwitch() {
     var testelm = document.getElementById("testButton"); //renamed this btw
     if (testelm.value=="Not Ready") {

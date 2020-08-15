@@ -27,16 +27,19 @@
                 <input type="button" onclick="joint();" id="btn" value="Join Lobby"></input>
             </form>
         </div>
-        <div id="chat-container">
-            <div id="chat-message-list">
-
+        <div id="chatbox">
+            <div id="chat-message-history">
+                <span id="messagePlaceholder"></span>
             </div>
-            <div id="new-message-container">
-
+            <div id="new-message-box">
+                <form>
+                    <input type="text" name="sendMessageForm" value="Type your message here" onclick="this.value='';">
+                    <input type="button" onclick="" id="btn" value="Send Message"></input>
+                </form>
             </div>
         </div>
         <div>
-            <p>Your Host ID is: <span id="hostID"></span></p>
+            <p>Your Host ID is: <span id="hostIDPlaceholder"></span></p>
         </div>
         <!--Footer-->
         <div class = "footer">
