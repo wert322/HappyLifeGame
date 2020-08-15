@@ -16,18 +16,25 @@
         <!--end of Header-->
         <h1>Happy Life Game!</h1>
         <div style = "text-align: center;">
-            <input type="button" onclick="initialize();" id="btn" value="Create Lobby"></input>
-        </div>
-        <br>
-        <div style = "text-align: center;">
             <form>
+                <label for="username">Username:</label>
+                <input type="text" name="usernameForm" value="Enter your username" onclick="this.value='';">
+                <br>
+                <input type="button" onclick="initialize();" id="btn" value="Create Lobby"></input>
+                <br>
                 <label for="hostID">Host's ID:</label>
                 <input type="text" name="hostIDForm" value="Enter the Host's ID" onclick="this.value='';">
                 <input type="button" onclick="joint();" id="btn" value="Join Lobby"></input>
             </form>
         </div>
-        <canvas id="gameScreen" width="800px" height="600px"></canvas>
-        <input type="button" onclick="rollDie();" id="btn" value="Roll Die"></input>
+        <div id="chat-container">
+            <div id="chat-message-list">
+
+            </div>
+            <div id="new-message-container">
+
+            </div>
+        </div>
         <div>
             <p>Your Host ID is: <span id="hostID"></span></p>
         </div>

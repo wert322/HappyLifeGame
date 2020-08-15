@@ -17,6 +17,7 @@ body {
     background-color: #f1c6de;
     height: 100%;
     min-height: 100%;
+    place-items: center;
 }
 
 h1 {
@@ -49,6 +50,21 @@ input[type=text] {
 #gameScreen {
     margin: 2% 10%;
     border: 1px solid
+}
+
+/* chat */
+#chat-container {
+    min-width: 800px;
+    max-width: 1000px;
+    max-height: 800px;
+    height: 95vh;
+    background-color: #f7e8f0;
+    border-radius: 10px;
+}
+
+#new-message-container {
+    border-top: 1px solid gray;
+    border-radius: 0 0 0 10px;
 }
 
 /* header */

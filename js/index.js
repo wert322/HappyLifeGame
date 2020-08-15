@@ -1,6 +1,7 @@
 var peer = new Peer();
 var conn = null;
 var dID = null;
+var username = "";
 
 function server() {
     peer = new Peer('', {secure:true, host:'happylifegame.herokuapp.com', port:443});
@@ -25,10 +26,10 @@ function initialize() {
     peer.on('open', function() {
         alert('My peer ID is: ' + dID);
         document.getElementById("hostID").innerHTML = dID;
+        username = document.getElementsByName("usernameForm")[0].value;
     });
     peer.on('connection', function(conn) {
-        alert('We have liftoff');
-        var phrase = prompt('Type your message here');
+        var phrase = prompt('We have liftoff. Type your message here');
         conn.on('open', function() {
             alert('The message was sent');
             conn.send(phrase);
@@ -40,6 +41,7 @@ function joint() {
     server()
     peer.on('open', function() {
         dID = document.getElementsByName("hostIDForm")[0].value;
+        username = document.getElementsByName("usernameForm")[0].value;
         if (dID == "" || dID == "Enter the Host's ID") {
             dID = prompt("Input your host's ID:");
         }
