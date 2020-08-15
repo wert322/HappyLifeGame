@@ -7,6 +7,7 @@ var peer = new Peer();
 var conn = null;
 var dID = null;
 var username = "";
+var clientList = new Map;
 
 function server() {
     peer = new Peer('', {secure:true, host:'happylifegame.herokuapp.com', port:443});
@@ -34,10 +35,16 @@ function initialize() {
         username = document.getElementsByName("usernameForm")[0].value;
     });
     peer.on('connection', function(conn) {
-        var phrase = prompt('We have liftoff. Type your message here');
+        alert('Connection established');
         conn.on('open', function() {
-            alert('The message was sent');
-            conn.send(phrase);
+            alert('Sending ID and username right now');
+            conn.send(username);
+        });
+        conn.on('data', function(data) {
+            alert('Received Username and ID in exchange');
+            tempID = data[0];
+            tempUS = data[1];
+            clientList.set(tempID, tempUS);
         });
     });
 }
@@ -45,16 +52,22 @@ function initialize() {
 function joint() {
     server()
     peer.on('open', function() {
-        dID = document.getElementsByName("hostIDForm")[0].value;
+        var cID = document.getElementsByName("hostIDForm")[0].value;
         username = document.getElementsByName("usernameForm")[0].value;
-        if (dID == "" || dID == "Enter the Host's ID") {
-            dID = prompt("Input your host's ID:");
+        if (cID == "" || cID == "Enter the Host's ID") {
+            cID = prompt("Input your host's ID:");
         }
-        conn = peer.connect(dID);
+        conn = peer.connect(cID);
         conn.on('open', function() {
             conn.on('data', function(data) {
                 alert('Received this message: ' + data);
+                clientList.set(cID, data);
             });
+            alert('Sending over Username and ID right now');
+            var combinedUSID = Array;
+            combinedUSID[0] = dID;
+            combinedUSID[1] = username;
+            conn.send(combinedUSID);
         });
     });
 }
