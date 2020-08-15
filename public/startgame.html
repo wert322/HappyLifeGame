@@ -13,23 +13,8 @@
         </div>
         <!--end of Header-->
         <h1>Happy Life Game!</h1>
-        <div style = "text-align: center;">
-            <form>
-                <label for="username">Username:</label>
-                <input type="text" name="usernameForm" value="Enter your username" onclick="this.value='';">
-                <br>
-                <input type="button" onclick="initialize();" id="btn" value="Create Lobby"></input>
-                <br>
-                <label for="hostID">Host's ID:</label>
-                <input type="text" name="hostIDForm" value="Enter the Host's ID" onclick="this.value='';">
-                <input type="button" onclick="joint();" id="btn" value="Join Lobby"></input>
-            </form>
-        </div>
 
         <div class="join-container">
-			<header class="join-header">
-				<h1><i class="fas fa-smile"></i> ChatCord</h1>
-			</header>
 			<main class="join-main">
 				<form action="chat.html">
 					<div class="form-control">
@@ -53,14 +38,11 @@
 							<option value="Java">Java</option>
 						</select>
 					</div>
-					<button type="submit" class="btn">Join Chat</button>
+					<button type="submit" class="btn">Join Game</button>
 				</form>
 			</main>
 		</div>
 
-        <div>
-            <p>Your Host ID is: <span id="hostIDPlaceholder"></span></p>
-        </div>
         <!--Footer-->
         <div class = "footer">
             <div class="footer-bottom">
