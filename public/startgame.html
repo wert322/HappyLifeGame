@@ -4,7 +4,8 @@
 		<link href="css/style.css" rel="stylesheet">
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 		<script>
-			$(document).ready(function() {
+			$(window).on("load", function() {
+				$("#custom-room-div").hide();
 				$("#room").change(function() {
 					if ($(this).val() == "custom") {
 						$("#custom-room-div").show();
@@ -47,13 +48,13 @@
 					<div class="form-control">
 						<label for="room">Room</label>
 						<select name="room" id="room">
-							<option value="custom">Create/join custom room...</option>
 							<option value="JavaScript">JavaScript</option>
 							<option value="Python">Python</option>
 							<option value="PHP">PHP</option>
 							<option value="C#">C#</option>
 							<option value="Ruby">Ruby</option>
 							<option value="Java">Java</option>
+							<option value="custom">Create/join custom room...</option>
 						</select>
 					</div>
 					<div class="form-control" id="custom-room-div">
