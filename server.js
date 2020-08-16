@@ -19,7 +19,7 @@ io.on('connection', socket => {
     socket.on('joinRoom', ({ username, room}) => {
         const user = userJoin(socket.id, username, room);
 
-        socket.join(user.room); 
+        socket.join(user.room);
 
         // Checks if this room has already been made, and adds to the list if not
         if (roomList.indexOf(room) === -1) {

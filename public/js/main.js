@@ -5,9 +5,14 @@ const userList = document.getElementById('users');
 
 
 // Get username and room from URL
-const { username, room } = Qs.parse(location.search, {
+var { username, room, customroom } = Qs.parse(location.search, {
     ignoreQueryPrefix: true
 });
+
+// Check if it's a custom room and if so, update room
+if (room === "custom") {
+    room = customroom;
+}
 
 const socket = io();
 
