@@ -16,8 +16,19 @@ if (room === "custom") {
 
 const socket = io();
 
+// Emites event to check if the room is full
+socket.emit('joinTest', {room});
+
 // Join chatroom
-socket.emit('joinRoom', { username, room });
+socket.on('joinTestResponse', isFull  => {
+    if (isFull) {
+        alert('This room is at maximum capacity. Please join a different room.');
+        // window.location = 'https://hips.hearstapps.com/hmg-prod.s3.amazonaws.com/images/dog-puppy-on-garden-royalty-free-image-1586966191.jpg?crop=1.00xw:0.669xh;0,0.190xh&resize=640:*';
+    } else {
+        socket.emit('joinRoom', { username, room });
+    }
+});
+
 
 // Get room and users
 socket.on('roomUsers', ({ room, users }) => {

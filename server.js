@@ -16,6 +16,13 @@ var roomList = [];
 
 // Run when client connects
 io.on('connection', socket => {
+
+    // Checks if the room is full and responds with an appropriate signaling event
+    socket.on('joinTest', ({room}) => {
+        var isFull = (getRoomUsers(room).length > 5);
+        socket.emit('joinTestResponse', isFull);
+    });
+
     socket.on('joinRoom', ({ username, room}) => {
         const user = userJoin(socket.id, username, room);
 
