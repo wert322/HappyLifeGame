@@ -89,3 +89,6 @@ cards.forEach(function(entry) {
     }
 });
 console.log(counter);
+function alertCount() {
+    alert(counter);
+}
