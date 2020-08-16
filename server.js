@@ -58,7 +58,7 @@ io.on('connection', socket => {
         const user = userLeave(socket.id);
         
         // Removes room from list if it's no longer populated/active
-        if (getRoomUsers(user.room).length === 0) {
+        if (user && getRoomUsers(user.room).length === 0) {
             var indexPlace = roomList.indexOf(user.room);
             if (indexPlace > -1) {
                 roomList.splice(indexPlace, 1);

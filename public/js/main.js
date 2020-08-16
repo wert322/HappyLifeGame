@@ -23,7 +23,7 @@ socket.emit('joinTest', {room});
 socket.on('joinTestResponse', isFull  => {
     if (isFull) {
         alert('This room is at maximum capacity. Please join a different room.');
-        // window.location = 'https://hips.hearstapps.com/hmg-prod.s3.amazonaws.com/images/dog-puppy-on-garden-royalty-free-image-1586966191.jpg?crop=1.00xw:0.669xh;0,0.190xh&resize=640:*';
+        window.location.replace("startgame.html");
     } else {
         socket.emit('joinRoom', { username, room });
     }
