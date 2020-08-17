@@ -3,6 +3,7 @@ const chatMessages = document.querySelector('.chat-messages');
 const roomName = document.getElementById('room-name');
 const userList = document.getElementById('users');
 
+const socket = io();
 
 // Get username and room from URL
 var { username, room, customroom } = Qs.parse(location.search, {
@@ -13,8 +14,6 @@ var { username, room, customroom } = Qs.parse(location.search, {
 if (room === "custom") {
     room = customroom;
 }
-
-const socket = io();
 
 // Emits event to check if the room is full
 socket.emit('joinTest', {room});
@@ -28,7 +27,6 @@ socket.on('joinTestResponse', isFull  => {
         socket.emit('joinRoom', { username, room });
     }
 });
-
 
 // Get room and users
 socket.on('roomUsers', ({ room, users }) => {

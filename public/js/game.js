@@ -8,14 +8,6 @@ function rollTwoDie() {
     return rollDie() + rollDie();
 }
 
-// returns the number of members in all given rooms as a map
-function getLobbySize(roomMap) {
-    socket.emit('getSize', {roomMap});
-    socket.on('getSizeResponse', ({memberCountMap}) => {
-        return memberCountMap;
-    });
-}
-
 var card01 = {age:"child",type:"event"};
 var card02 = {age:"child",type:"event"};
 var card03 = {age:"child",type:"event"};

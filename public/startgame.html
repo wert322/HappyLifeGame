@@ -4,6 +4,8 @@
 		<link href="css/style.css" rel="stylesheet">
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 		<script src=js/game.js></script>
+		<script src=js/test.js></script>
+		<script src="/socket.io/socket.io.js"></script>
 		<script>
 			$(window).on("load", function() {
 				$("#custom-room-div").hide();
@@ -20,7 +22,6 @@
 				});
 			});
 		</script>
-		<script> const socket = io(); </script>
     </head>
     <body>
         <!--Header-->
@@ -31,8 +32,9 @@
 			<a class="active" href="startgame.html">Start Game</a>
         </div>
         <!--end of Header-->
-        <h1>Happy Life Game!</h1>
-
+		<h1>Happy Life Game!</h1>
+		<h3>Rooms Available</h3>
+		<ul id="rooms"></ul>
         <div class="join-container">
 			<main class="join-main">
 				<form action="chat.html">
