@@ -44,6 +44,7 @@ io.on('connection', socket => {
             room: user.room,
             users: getRoomUsers(user.room)
         });
+        io.emit('updateRooms', {filler: true});
     });
 
     // Listen for chatMessage
@@ -81,6 +82,7 @@ io.on('connection', socket => {
                 room: user.room,
                 users: getRoomUsers(user.room)
             });
+            io.emit('updateRooms', {filler: true});
         }
     });
 });

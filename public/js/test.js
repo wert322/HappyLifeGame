@@ -11,7 +11,7 @@ socket.on('getSizeOutput', ({memberCount, roomList}) => {
     outputRoomList(memberCount, roomList);
 });
 
-socket.on('roomUsers', ({room, users}) => {
+socket.on('updateRooms', ({filler}) => {
     socket.emit('getSize',{filler: true});
 });
 
