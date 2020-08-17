@@ -53,6 +53,15 @@ io.on('connection', socket => {
         io.to(user.room).emit('message', formatMessage(user.username, msg));
     });
 
+    // Listens for and returns the number of people in all rooms of a given array
+    socket.on('getSize', ({roomMap}) => { 
+        var memberCountMap = new Map();
+        for (i = 0; i < roomMap.size; i++) {
+            memberCountMap.set(roomMap[i], getRoomUsers(roomMap[i]).length);
+        };
+        socket.emit('getSizeResponse', memberCountMap);
+    });
+
     // Runs when client disconnects
     socket.on('disconnect', () => {
         const user = userLeave(socket.id);

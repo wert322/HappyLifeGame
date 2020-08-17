@@ -3,8 +3,17 @@ function rollDie() {
     return Math.floor(Math.random() * 6 + 1);
 }
 
+// rolls two die and returns the sum, value(1 to 12)
 function rollTwoDie() {
     return rollDie() + rollDie();
+}
+
+// returns the number of members in all given rooms as a map
+function getLobbySize(roomMap) {
+    socket.emit('getSize', {roomMap});
+    socket.on('getSizeResponse', ({memberCountMap}) => {
+        return memberCountMap;
+    });
 }
 
 var card01 = {age:"child",type:"event"};
