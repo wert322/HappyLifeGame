@@ -55,11 +55,11 @@ io.on('connection', socket => {
 
     // Listens for and returns the number of people in all rooms of a given array
     socket.on('getSize', (filler) => { 
-        var memberCountMap = new Map();
+        var memberCount = new Array();
         for (i = 0; i < roomList.length; i++) {
-            memberCountMap.set(roomList[i], getRoomUsers(roomList[i]).length);
+            memberCount.push(getRoomUsers(roomList[i]).length);
         };
-        socket.emit('roomUsers', {memberCountMap, roomList});
+        socket.emit('getSizeOutput', {memberCount, roomList});
     });
 
     // Runs when client disconnects

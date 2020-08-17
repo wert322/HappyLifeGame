@@ -5,13 +5,22 @@ const socket = io();
 socket.emit('getSize',{filler: true});
 
 // Captures the map of rooms and their sizes, along with a list of the rooms
-socket.on('roomUsers', ({memberCountMap, roomList}) => {
-    outputRoomList(memberCountMap, roomList);
+socket.on('getSizeOutput', ({memberCount, roomList}) => {
+    console.log(memberCount.toString());
+    console.log(roomList.toString());
+    outputRoomList(memberCount, roomList);
+});
+
+socket.on('roomUsers', ({room, users}) => {
+    socket.emit('getSize',{filler: true});
 });
 
 // Adds roomlist to startgame DOM
-function outputRoomList(memberCountMap, roomList) {
-    roomList.innerHTML = `
-        ${roomList.map(room => `<li>${room}: ${memberCountMap.get(room)}/6 users</li>`).join('')}
-    `;
+function outputRoomList(memberCount, roomList) {
+    var roomListHTML = "";
+    for (i = 0; i < roomList.length; i++) {
+        roomListHTML += `<li>${roomList[i]}: ${memberCount[i]}/6 users</li>`;
+    }
+    console.log(roomListHTML);
+    roomList.innerHTML = roomListHTML;
 }
