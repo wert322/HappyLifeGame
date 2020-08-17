@@ -11,5 +11,7 @@ socket.on('roomUsers', ({memberCountMap, roomList}) => {
 
 // Adds roomlist to startgame DOM
 function outputRoomList(memberCountMap, roomList) {
-    roomList.innerHTML = `${roomList.map(room => `<li>${room}: ${memberCountMap.get(room)} /6 users</li>`).join('')}`;
+    roomList.innerHTML = `
+        ${roomList.map(room => `<li>${room}: ${memberCountMap.get(room)}/6 users</li>`).join('')}
+    `;
 }
