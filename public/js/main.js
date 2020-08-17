@@ -16,7 +16,7 @@ if (room === "custom") {
 
 const socket = io();
 
-// Emites event to check if the room is full
+// Emits event to check if the room is full
 socket.emit('joinTest', {room});
 
 // Join chatroom
