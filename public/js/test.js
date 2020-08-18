@@ -1,4 +1,4 @@
-const roomdoc = document.getElementById('rooms');
+const roomDoc = document.getElementById('rooms');
 const socket = io();
 
 // Emits event to get the rooms and their sizes
@@ -17,12 +17,12 @@ socket.on('updateRooms', ({filler}) => {
 
 // Adds roomlist to startgame DOM
 function outputRoomList(memberCount, roomList) {
-    roomdoc.textContent='';
+    roomDoc.textContent='';
     var fragment = document.createDocumentFragment();
     for (var i = 0; i < roomList.length; i++) {
         var li = document.createElement("li");
         li.appendChild(document.createTextNode(roomList[i] + ": " + memberCount[i] + "/6 users"));
         fragment.appendChild(li);
     }
-    roomdoc.appendChild(fragment);
+    roomDoc.appendChild(fragment);
 }
