@@ -83,13 +83,3 @@ var cards = [
     card51, card52, card53, card54, card55, card56, card57, card58, card59, card60
 ]
 
-var counter = 0;
-cards.forEach(function(entry) {
-    if (entry.age === "adult" && entry.type === "good") {
-        counter++;
-    }
-});
-console.log(counter);
-function alertCount() {
-    alert(counter);
-}
