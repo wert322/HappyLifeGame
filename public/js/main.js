@@ -63,7 +63,15 @@ chatForm.addEventListener('submit', (e) => {
 function outputMessage(message) {
     const div = document.createElement('div');
     div.classList.add('message');
-    div.innerHTML = `<p><span id="time">${message.time}</span> ${message.username}: <span id="text">${message.text}</span></p>`;
+    var phrase = document.createElement("span");
+    phrase.setAttribute("id", "time");
+    phrase.appendChild(document.createTextNode(message.time));
+    div.appendChild(phrase);
+    div.appendChild(document.createTextNode(" " + message.username));
+    var phraseTwo = document.createElement("span")
+    phraseTwo.setAttribute("id", "text");
+    phraseTwo.appendChild(document.createTextNode(" " + message.text));
+    div.appendChild(phraseTwo);
     document.querySelector('.chat-messages').appendChild(div);
 }
 
