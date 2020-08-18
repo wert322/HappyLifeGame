@@ -18,13 +18,11 @@ socket.on('updateRooms', ({filler}) => {
 // Adds roomlist to startgame DOM
 function outputRoomList(memberCount, roomList) {
     roomdoc.textcontent='';
-    var roomListHTML = "";
     var fragment = document.createDocumentFragment();
     for (var i = 0; i < roomList.length; i++) {
         var li = document.createElement("li");
         li.appendChild(document.createTextNode(roomList[i] + ": " + memberCount[i] + "/6 users"));
         fragment.appendChild(li);
-        //roomListHTML += `<li>${roomList[i]}: ${memberCount[i]}/6 users</li>`;
     }
     roomdoc.appendChild(fragment);
 }
