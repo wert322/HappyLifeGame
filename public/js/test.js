@@ -22,5 +22,5 @@ function outputRoomList(memberCount, roomList) {
         roomListHTML += `<li>${roomList[i]}: ${memberCount[i]}/6 users</li>`;
     }
     console.log(roomListHTML);
-    roomList.innerHTML = roomListHTML;
+    roomList.textContent = roomListHTML;
 }

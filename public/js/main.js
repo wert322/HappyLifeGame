@@ -69,12 +69,17 @@ function outputMessage(message) {
 
 // Add room name to DOM
 function outputRoomName(room) {
-    roomName.innerText = room;
+    roomName.textContent= room;
 }
 
 // Add users to DOM
 function outputUsers(users) {
-    userList.innerHTML = `
-        ${users.map(user => `<li>${user.username}</li>`).join('')}
-    `;
+    userList.textContent='';
+    for (var i = 0; i < users.length; i++) {
+        console.log(users[i].username);
+        var li = document.createElement("li");
+        li.setAttribute('id', users.username);
+        li.appendChild(document.createTextNode(users[i].username));
+        userList.appendChild(li);
+    }
 }
