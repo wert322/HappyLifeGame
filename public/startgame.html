@@ -4,22 +4,6 @@
 		<link href="css/style.css" rel="stylesheet">
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 		<script src=js/game.js></script>
-		<script>
-			$(window).on("load", function() {
-				$("#custom-room-div").hide();
-				$("#room").change(function() {
-					if ($(this).val() == "custom") {
-						$("#custom-room-div").show();
-						$("#custom-room-text").attr('required', '');
-						$("#custom-room-text").attr('data-error', 'This field is required.');
-					} else {
-						$("#custom-room-div").hide();
-						$("#custom-room-text").removeAttr('required');
-						$("#custom-room-text").removeAttr('data-error');
-					}
-				});
-			});
-		</script>
     </head>
     <body>
         <!--Header-->
@@ -31,8 +15,6 @@
         </div>
         <!--end of Header-->
 		<h1>Happy Life Game!</h1>
-		<h3>Rooms Available</h3>
-		<ul id="rooms"></ul>
         <div class="join-container">
 			<main class="join-main">
 				<form action="chat.html">
@@ -48,34 +30,23 @@
 						/>
 					</div>
 					<div class="form-control">
-						<label for="room">Room</label>
-						<select name="room" id="room">
-							<option value="Hayasaka">Hayasaka</option>
-							<option value="Maki">Maki</option>
-							<option value="Fujiwara">Fujiwara</option>
-							<option value="Moeha">Moeha</option>
-							<option value="Shirogane">Shirogane</option>
-							<option value="Kaguya">Kaguya</option>
-							<option value="Ishigami">Ishigami</option>
-							<option value="Kei">Kei</option>
-							<option value="Iino">Iino</option>
-							<option value="custom">Create/join custom room...</option>
-						</select>
-					</div>
-					<div class="form-control" id="custom-room-div">
-						<label for="customroom">Create/join a custom room</label>
+						<label for="room">Create/join a room</label>
 						<input
 							type="text"
-							name="customroom"
-							id="custom-room-text"
-							placeholder="Enter the custom room name..."
+							name="room"
+							id="room-text"
+							placeholder="Enter the room name..."
+							required
+							data-error="This field is required."
 						/>
 					</div>
 					<button type="submit" class="btn">Join Game</button>
 				</form>
 			</main>
 		</div>
-
+		<h3>Rooms Available:</h3>
+		<ul id="rooms"></ul>
+		
         <!--Footer-->
         <div class = "footer">
             <div class="footer-bottom">

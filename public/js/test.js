@@ -17,12 +17,16 @@ socket.on('updateRooms', ({filler}) => {
 
 // Adds roomlist to startgame DOM
 function outputRoomList(memberCount, roomList) {
-    roomDoc.textContent='';
-    var fragment = document.createDocumentFragment();
-    for (var i = 0; i < roomList.length; i++) {
-        var li = document.createElement("li");
-        li.appendChild(document.createTextNode(roomList[i] + ": " + memberCount[i] + "/6 users"));
-        fragment.appendChild(li);
+    if (roomList.length === 0) {
+        roomDoc.textContent='No rooms are currently available';
+    } else {
+        roomDoc.textContent='';
+        var fragment = document.createDocumentFragment();
+        for (var i = 0; i < roomList.length; i++) {
+            var li = document.createElement("li");
+            li.appendChild(document.createTextNode(roomList[i] + ": " + memberCount[i] + "/6 users"));
+            fragment.appendChild(li);
+        }
+        roomDoc.appendChild(fragment);
     }
-    roomDoc.appendChild(fragment);
 }
