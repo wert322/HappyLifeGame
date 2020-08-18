@@ -60,6 +60,7 @@ chatForm.addEventListener('submit', (e) => {
 
 
 // Output message to DOM
+// Could optimize with docfragment
 function outputMessage(message) {
     const div = document.createElement('div');
     div.classList.add('message');
