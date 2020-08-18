@@ -85,7 +85,6 @@ function outputRoomName(room) {
 function outputUsers(users) {
     userList.textContent='';
     for (var i = 0; i < users.length; i++) {
-        console.log(users[i].username);
         var li = document.createElement("li");
         li.setAttribute('id', users.username);
         li.appendChild(document.createTextNode(users[i].username));
