@@ -1,3 +1,34 @@
+const gameState = {}
+
+function preload() {
+  this.load.image('codey', 'https://s3.amazonaws.com/codecademy-content/courses/learn-phaser/codey.png');
+}
+
+function create() {
+  gameState.cursors = this.input.keyboard.createCursorKeys();
+  gameState.codey = this.add.sprite(150, 100, 'codey');
+}
+
+function update() {
+   if (gameState.cursors.down.isDown) {
+   gameState.codey.y += 1;
+ }
+}
+
+const config = {
+  type: Phaser.AUTO,
+  width: 400,
+  height: 600,
+  backgroundColor: 0xdda0dd,
+  scene: {
+    preload,
+    create,
+    update
+  }
+}
+
+const game = new Phaser.Game(config);
+
 /* rolls a die and returns the value (1 to 6) */
 function rollDie() {
     return Math.floor(Math.random() * 6 + 1);
