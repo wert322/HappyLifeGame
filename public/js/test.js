@@ -1,4 +1,6 @@
 const roomDoc = document.getElementById('rooms');
+const roomFormInput = document.getElementById('room-text');
+const roomFormButtons = document.getElementsByName('room-option');
 const socket = io();
 
 // Emits event to get the rooms and their sizes
@@ -25,6 +27,8 @@ function outputRoomList(memberCount, roomList) {
         for (var i = 0; i < roomList.length; i++) {
             var li = document.createElement("li");
             var button = document.createElement("button");
+            button.setAttribute('name', 'room-option');
+            button.setAttribute('data-roomname', roomList[i]);
             if (i % 2 === 0) {
                 li.setAttribute('id', 'alternativelist');
             } else {
@@ -37,3 +41,9 @@ function outputRoomList(memberCount, roomList) {
         roomDoc.appendChild(fragment);
     }
 }
+
+roomFormButtons.forEach(button => {
+    button.addEventListener("click", () => {
+        roomFormInput.value = roomFormButtons.dataset.roomname;
+    })
+})
