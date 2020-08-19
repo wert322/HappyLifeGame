@@ -39,11 +39,15 @@ function outputRoomList(memberCount, roomList) {
             fragment.appendChild(li);
         }
         roomDoc.appendChild(fragment);
+        attachingListeners();
     }
 }
 
+
+function attachingListeners() {
 roomFormButtons.forEach(button => {
     button.addEventListener("click", () => {
-        roomFormInput.value = roomFormButtons.dataset.roomname;
+        roomFormInput.value = button.dataset.roomname;
     })
 })
+};
