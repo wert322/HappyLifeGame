@@ -6,6 +6,8 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
         <link rel="stylesheet" href="css/style.css">
         <script src="//cdn.jsdelivr.net/npm/phaser@3.24.1/dist/phaser.min.js"></script>
+        <script type = "text/javascript" src="js/scene1.js"></script>
+        <script type = "text/javascript" src="js/scene2.js"></script>
         <title>ChatCord App</title>
         <link rel="shortcut icon" href="images/Kaguya 1.ico"/>
     </head>
@@ -37,7 +39,15 @@
             </form>
         </div>
     </div>
-    <canvas style='margin:auto;'></canvas>
+    <div id='gameDiv'>
+        <style>
+            body {
+                padding: 0px;
+                margin: 0px;
+            }
+        </style>
+    </div>
+
 
     <script
         src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.9.4/qs.js"
