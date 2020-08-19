@@ -45,9 +45,9 @@ function outputRoomList(memberCount, roomList) {
 
 
 function attachingListeners() {
-roomFormButtons.forEach(button => {
-    button.addEventListener("click", () => {
-        roomFormInput.value = button.dataset.roomname;
-    })
-})
+    roomFormButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            roomFormInput.value = button.dataset.roomname;
+        });
+    });
 };
