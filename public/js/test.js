@@ -24,6 +24,8 @@ function outputRoomList(memberCount, roomList) {
         var fragment = document.createDocumentFragment();
         for (var i = 0; i < roomList.length; i++) {
             var li = document.createElement("li");
+            li.setAttribute('id', 'mdl-list__item');
+            li.setAttribute('class', 'center')
             li.appendChild(document.createTextNode(roomList[i] + ": " + memberCount[i] + "/6 users"));
             fragment.appendChild(li);
         }
