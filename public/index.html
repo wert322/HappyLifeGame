@@ -7,7 +7,10 @@
         <script src="/socket.io/socket.io.js"></script>
         <script src = js/game.js></script>
         <title>Happy Life Game!</title>
-        <link href="css/style.css" rel="stylesheet">
+        <link rel="shortcut icon" href="Chika 4.ico" />
+        <link href="css/material.css" rel="stylesheet">
+        <script href="css/material.js"></script>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     </head>
     <body>
         <!--Header-->
@@ -18,25 +21,17 @@
             <a href="startgame.html">Start Game</a>
         </div>
         <!--end of Header-->
-        <h1>Happy Life Game!</h1>
+        <h1 id="centermain">Happy Life Game!</h1>
         <div style = "text-align: center;">
-            <input type="button" onclick="location.href='startgame.html';" id="btn" value="Start game"></input>
+            <input type="button" onclick="location.href='startgame.html';" id="btn" value="Start game" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"></input>
         </div>
         <div>
-            <p>
-                This is a <a href="startgame.html">test</a>.
-            </p>
+            <img class = "center" src="/Logo.png"
         </div>
-        <div>
-            <input id="testnumber" type="button" value="testnumber" onclick="alertCount();"/>
-        </div>
-        </div>
-        <!--Footer-->
-            <div class = "footer">
-                <div class="footer-bottom">
-                    &copy; Brandon M. & Jonathan Z. | <a href="https://github.com/wert322/HappyLifeGame">GitHub Link</a>
-                </div>
+        <footer class = "mdl-mini-footer">
+            <div class="mdl-mini-footer--left-section">
+                &copy; Brandon M. & Jonathan Z. | <a href="https://github.com/wert322/HappyLifeGame">GitHub Link</a>
             </div>
-        <!--End of Footer-->
+        </footer>
     </body>
 </html>
