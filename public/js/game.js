@@ -1,3 +1,5 @@
+const cardCount = 99;
+
 const config = {
     type: Phaser.AUTO,
     scale: {
