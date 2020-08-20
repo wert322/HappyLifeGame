@@ -8,13 +8,13 @@ class scene1 extends Phaser.Scene {
     }
 
     create() {
-        this.add.text(window.innnerWidth, 20, "Happy Life Game", {font: "28px cursive"});
-        this.add.text(window.innnerWidth, 100, "Press space to ready up", {font: "12px cursive"});
-        keySpacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.add.text(config.scale.width/2 - 550, 20, "Happy Life Game", {font: "128px cursive"});
+        this.add.text(config.scale.width/2 - 200, 800, "Press space to start", {font: "48px cursive"});
+        this.keyboard = this.input.keyboard.addKeys("SPACE");
     }
 
     update() {
-        if (this.keySpacebar.isDown) {
+        if (this.keyboard.SPACE.isDown) {
             this.scene.start("playGame");
         }
     }
