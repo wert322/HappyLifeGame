@@ -30,9 +30,9 @@ function outputRoomList(memberCount, roomList) {
             button.setAttribute('name', 'room-option');
             button.setAttribute('data-roomname', roomList[i]);
             if (i % 2 === 0) {
-                li.setAttribute('id', 'alternativelist');
+                button.setAttribute('id', 'listButtonsOne');
             } else {
-                li.setAttribute('id', 'regularlist');
+                button.setAttribute('id', 'listButtonsTwo');
             }
             button.appendChild(document.createTextNode(roomList[i] + ": " + memberCount[i] + "/6 users"));
             li.appendChild(button);

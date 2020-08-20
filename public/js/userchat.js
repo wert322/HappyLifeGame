@@ -2,6 +2,7 @@ const chatForm = document.getElementById('chat-form');
 const chatMessages = document.querySelector('.chat-messages');
 const roomName = document.getElementById('room-name');
 const userList = document.getElementById('users');
+const toggleButton = document.getElementById('readyGameButton');
 
 const socket = io();
 
@@ -14,6 +15,8 @@ var { username, room, customroom } = Qs.parse(location.search, {
 if (room === "custom") {
     room = customroom;
 }
+
+socket.emit('whoseReady'), 
 
 // Emits event to check if the room is full
 socket.emit('joinTest', {room});
@@ -60,7 +63,6 @@ chatForm.addEventListener('submit', (e) => {
 
 
 // Output message to DOM
-// Could optimize with docfragment
 function outputMessage(message) {
     const div = document.createElement('div');
     div.classList.add('message');
@@ -92,4 +94,12 @@ function outputUsers(users) {
         fragment.appendChild(li);
     }
     userList.appendChild(fragment);
+}
+
+function changeReady() {
+    if (toggleButton.value === "Ready") {
+        toggleButton.value = "Not Ready";
+    } else {
+        toggleButton.value = "Ready";
+    }
 }
