@@ -16,8 +16,6 @@ if (room === "custom") {
     room = customroom;
 }
 
-socket.emit('whoseReady'), 
-
 // Emits event to check if the room is full
 socket.emit('joinTest', {room});
 
@@ -25,9 +23,13 @@ socket.emit('joinTest', {room});
 socket.on('joinTestResponse', isFull  => {
     if (isFull) {
         alert('This room is at maximum capacity. Please join a different room.');
-        window.location.replace("startgame.html");
+        window.location.replace("lobby.html");
     } else {
         socket.emit('joinRoom', { username, room });
+        socket.on('usernameTaken', filler => {
+            alert('This username was taken. Please try a different one.');
+            window.location.replace("lobby.html");
+        });
     }
 });
 
@@ -39,7 +41,6 @@ socket.on('roomUsers', ({ room, users }) => {
 
 // Message from server
 socket.on('message', message => {
-    console.log(message);
     outputMessage(message);
 
     // Scroll down
