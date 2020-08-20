@@ -10,8 +10,7 @@ class scene2 extends Phaser.Scene {
     }
     
     create() {
-        gameState.cursors = this.input.keyboard.createCursorKeys();
-        gameState.cardChildEvent = this.add.sprite(150, 100, 'cardChildEvent');
+        this.add.sprite(150, 100, 'cardChildEvent');
     }
     
 }
