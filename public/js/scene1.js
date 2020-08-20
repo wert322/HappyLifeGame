@@ -4,7 +4,7 @@ class scene1 extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("logo", "images/logo.png");
+        this.load.image("logo", "images/Logo.png");
     }
 
     create() {
