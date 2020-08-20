@@ -24,27 +24,39 @@ io.on('connection', socket => {
     });
 
     socket.on('joinRoom', ({ username, room}) => {
-        const user = userJoin(socket.id, username, room);
-
-        socket.join(user.room);
-
-        // Checks if this room has already been made, and adds to the list if not
-        if (roomList.indexOf(room) === -1) {
-            roomList.push(room);
+        var tempUsers = getRoomUsers(room);
+        var doesContain = false;
+        for (i = 0; i < tempUsers.length; i++) {
+            var tempObject = tempUsers[i];
+            if (tempObject.username === username) {
+                doesContain = true;
+            }
         }
+        if (doesContain) {
+            socket.emit('usernameTaken', {filler: true});
+        } else {
+            const user = userJoin(socket.id, username, room);
 
-        // Welcome current user
-        socket.emit('message', formatMessage(botName, 'Welcome!'));
+            socket.join(user.room);
 
-        // Broadcast when a user connects
-        socket.broadcast.to(user.room).emit('message', formatMessage(botName, `${user.username} has joined the chat.`));
+            // Checks if this room has already been made, and adds to the list if not
+            if (roomList.indexOf(room) === -1) {
+                roomList.push(room);
+            }
 
-        // Send users and room info
-        io.to(user.room).emit('roomUsers', {
-            room: user.room,
-            users: getRoomUsers(user.room)
-        });
-        io.emit('updateRooms', {filler: true});
+            // Welcome current user
+            socket.emit('message', formatMessage(botName, 'Welcome!'));
+
+            // Broadcast when a user connects
+            socket.broadcast.to(user.room).emit('message', formatMessage(botName, `${user.username} has joined the chat.`));
+
+            // Send users and room info
+            io.to(user.room).emit('roomUsers', {
+                room: user.room,
+                users: getRoomUsers(user.room)
+            });
+            io.emit('updateRooms', {filler: true});
+        }
     });
 
     // Listen for chatMessage
