@@ -19,10 +19,49 @@ class scene2 extends Phaser.Scene {
     
     create() {
         var cardList = this.setupCards();
-        this.setupBoard(cardList);
+
+        //var cards = this.setupBoard(cardList);
+        this.startCard = this.add.sprite(150, 750, 'cardStart');
+        this.startCard.setScale(0.175);
+        let cards = [];
+        for (let i = 1; i <= cardCount; i++) {
+            let cardVersion = 'card' + cardList[i - 1].age + cardList[i - 1].type;
+            if (i % 12 < 5) {
+                this.card = this.add.sprite(150 + 600 * Math.round(i / 12), 750 - 150 * (i % 6), cardVersion);
+                this.card.setScale(0.175);
+            } else if (i % 12 === 5) {
+                this.card = this.add.sprite(300 + 600 * Math.round(i / 12), 100, cardVersion);
+                this.card.setScale(0.175);
+                this.card.setAngle(90);
+            } else if (i % 12 < 11) {
+                this.card = this.add.sprite(600 * Math.round(i / 12) - 150, 150 + 150 * (i % 6), cardVersion);
+                this.card.setScale(0.175);
+                this.card.setAngle(180);
+            } else {// i % 12 === 11
+                this.card = this.add.sprite(600 * Math.round(i / 12), 800, cardVersion);
+                this.card.setScale(0.175);
+                this.card.setAngle(90);
+            }
+            cards.push(this.card);
+        }
+        this.goalCard = this.add.sprite(4950, 150, 'cardGoal');
+        this.goalCard.setScale(0.175);
+
+        this.allCardsGroup = this.add.container(0, 0, cards);
+        this.keyboard = this.input.keyboard.addKeys("LEFT,RIGHT");
     }
 
     update() {
+        if (this.keyboard.LEFT.isDown) {
+            this.startCard.x -= 10;
+            this.goalCard.x -= 10;
+            this.allCardsGroup.x -= 10;
+        }
+        if (this.keyboard.RIGHT.isDown) {
+            this.startCard.x += 10;
+            this.goalCard.x += 10;
+            this.allCardsGroup.x += 10;
+        }
     }
     
     // sets up the card orderings and returns an array of cards
@@ -49,11 +88,11 @@ class scene2 extends Phaser.Scene {
         return cardList;
     }
 
-    // sets up the cards on the board 0:(150,750) 1:(150,600) 2:(150,450) 3:(150,300) 4:(150,150)
+    // sets up the cards on the board
     setupBoard(cardList) {
-        let allCards = this.add.group();
         this.startCard = this.add.sprite(150, 750, 'cardStart');
         this.startCard.setScale(0.175);
+        let cards = [];
         for (let i = 1; i <= cardCount; i++) {
             let cardVersion = 'card' + cardList[i - 1].age + cardList[i - 1].type;
             if (i % 12 < 5) {
@@ -72,9 +111,11 @@ class scene2 extends Phaser.Scene {
                 this.card.setScale(0.175);
                 this.card.setAngle(90);
             }
+            cards.push(this.card);
         }
         this.startGoal = this.add.sprite(4950, 150, 'cardGoal');
         this.startGoal.setScale(0.175);
+        return cards;
     }
 
     /* rolls a die and returns the value (1 to 6) */
