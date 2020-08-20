@@ -4,15 +4,15 @@ class scene2 extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('cardChildEvent', 'images/Child_Event_Card.png');
-        this.load.image('cardChildMisfortune', 'images/Child_Misfortune_Card.png');
-        this.load.image('cardChildLucky', 'images/Child_Lucky_Card.png');
-        this.load.image('cardAdultEvent', 'images/Adult_Event_Card.png');
-        this.load.image('cardAdultMisfortune', 'images/Adult_Misfortune_Card.png');
-        this.load.image('cardAdultLucky', 'images/Adult_Lucky_Card.png');
-        this.load.image('cardOldAgeEvent', 'images/Old_Age_Event_Card.png');
-        this.load.image('cardOldAgeMisfortune', 'images/Old_Age_Misfortune_Card.png');
-        this.load.image('cardOldAgeLucky', 'images/Old_Age_Lucky_Card.png');
+        this.load.image('cardChildEvent', 'images/child_event_card.png');
+        this.load.image('cardChildMisfortune', 'images/child_misfortune_card.png');
+        this.load.image('cardChildLucky', 'images/child_lucky_card.png');
+        this.load.image('cardAdultEvent', 'images/adult_event_card.png');
+        this.load.image('cardAdultMisfortune', 'images/adult_misfortune_card.png');
+        this.load.image('cardAdultLucky', 'images/adult_lucky_card.png');
+        this.load.image('cardOldAgeEvent', 'images/old_age_event_card.png');
+        this.load.image('cardOldAgeMisfortune', 'images/old_age_misfortune_card.png');
+        this.load.image('cardOldAgeLucky', 'images/old_age_lucky_card.png');
         this.load.image('cardStart', 'images/start_card.png');
         this.load.image('cardGoal', 'images/goal_card.png');
     }
