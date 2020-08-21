@@ -19,24 +19,45 @@ class scene2 extends Phaser.Scene {
     
     create() {
         var cardList = this.setupCards();
-
         var cards = this.setupBoard(cardList);
-
-
         this.allCardsGroup = this.add.container(0, 0, cards);
-        this.keyboard = this.input.keyboard.addKeys("LEFT,RIGHT");
+        this.keyboard = this.input.keyboard.addKeys("LEFT,RIGHT,UP,DOWN,SPACE,T,Y");
+        this.counter = 0;
+        this.turn = false;
+        this.displayingCard = false;
+        this.timeSinceLastIncrement = 0;
+        this.turnDisplay = this.add.text(100, 10, "false", {font: "60px arial"});
+        this.counterDisplay = this.add.text(10, 10, "0", {font: "60px arial"});
     }
 
     update() {
-        if (this.keyboard.LEFT.isDown) {
-            this.startCard.x += 10;
-            this.goalCard.x += 10;
+        this.timeSinceLastIncrement += this.time.elapsed;
+        if (this.displayingCard && this.timeSinceLastIncrement >= 2) {
+            this.allCardsGroup.getAt(this.counter).destroy();
+            this.displayingCard = false;
+        }
+        this.turnDisplay.setText(this.turn.toString());
+        this.counterDisplay.setText("" + this.counter);
+        if (this.keyboard.LEFT.isDown && this.allCardsGroup.x <= 0) {
             this.allCardsGroup.x += 10;
         }
-        if (this.keyboard.RIGHT.isDown) {
-            this.startCard.x -= 10;
-            this.goalCard.x -= 10;
+        if (this.keyboard.RIGHT.isDown && this.allCardsGroup.x >= -3500) {
             this.allCardsGroup.x -= 10;
+        }
+        if (this.keyboard.UP.isDown && this.counter < this.allCardsGroup.count('visible', true)) {
+            this.counter++;
+        }
+        if (this.keyboard.DOWN.isDown && this.counter > 0) {
+            this.counter--;
+        }
+        if (this.keyboard.T.isDown) {
+            this.turn = true;
+        }
+        if (this.keyboard.SPACE.isDown && this.turn) {
+            this.timeSinceLastIncrement = 0;
+            this.turn = false;
+            this.displayingCard = true;
+            this.landedCard(this.counter);
         }
     }
     
@@ -68,7 +89,8 @@ class scene2 extends Phaser.Scene {
     setupBoard(cardList) {
         this.startCard = this.add.sprite(150, 750, 'cardStart');
         this.startCard.setScale(0.175);
-        let cards = [];
+        this.startCard.setOrigin(0.5);
+        let cards = [this.startCard];
         for (let i = 1; i <= cardCount; i++) {
             let cardVersion = 'card' + cardList[i - 1].age + cardList[i - 1].type;
             if (i % 12 < 5) {
@@ -87,11 +109,23 @@ class scene2 extends Phaser.Scene {
                 this.card.setScale(0.175);
                 this.card.setAngle(90);
             }
+            this.card.setOrigin(0.5);
             cards.push(this.card);
         }
         this.goalCard = this.add.sprite(4950, 150, 'cardGoal');
         this.goalCard.setScale(0.175);
+        this.goalCard.setOrigin(0.5);
+        cards.push(this.goalCard);
         return cards;
+    }
+
+    // animations done to the card the player landed on
+    landedCard(index) {
+        let card = this.allCardsGroup.getAt(index);
+        card.setX(800);
+        card.setY(450);
+        card.setScale(1);
+        this.allCardsGroup.bringToTop(card);
     }
 
     /* rolls a die and returns the value (1 to 6) */
