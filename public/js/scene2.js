@@ -4,6 +4,7 @@ class scene2 extends Phaser.Scene {
     }
 
     preload() {
+        // All the cards used
         this.load.image('cardChildEvent', 'images/child_event_card.png');
         this.load.image('cardChildMisfortune', 'images/child_misfortune_card.png');
         this.load.image('cardChildLucky', 'images/child_lucky_card.png');
@@ -18,24 +19,25 @@ class scene2 extends Phaser.Scene {
     }
     
     create() {
+        // Set up cards
         var cardList = this.setupCards();
         var cards = this.setupBoard(cardList);
         this.allCardsGroup = this.add.container(0, 0, cards);
+
+        // Keyboard inputs
         this.keyboard = this.input.keyboard.addKeys("LEFT,RIGHT,UP,DOWN,SPACE,T,Y");
-        this.counter = 0;
-        this.turn = false;
-        this.displayingCard = false;
-        this.timeSinceLastIncrement = 0;
+
+        // Game variables
+        this.counter = 0; // testing purposes: what card to pick
+        this.turn = false; // who's turn it is
+        this.displayingCard = false; // currently displaying a card on the screen or not
+
+        // Game variable display
         this.turnDisplay = this.add.text(100, 10, "false", {font: "60px arial"});
         this.counterDisplay = this.add.text(10, 10, "0", {font: "60px arial"});
     }
 
     update() {
-        this.timeSinceLastIncrement += this.time.elapsed;
-        if (this.displayingCard && this.timeSinceLastIncrement >= 2) {
-            this.allCardsGroup.getAt(this.counter).destroy();
-            this.displayingCard = false;
-        }
         this.turnDisplay.setText(this.turn.toString());
         this.counterDisplay.setText("" + this.counter);
         if (this.keyboard.LEFT.isDown && this.allCardsGroup.x <= 0) {
@@ -54,7 +56,7 @@ class scene2 extends Phaser.Scene {
             this.turn = true;
         }
         if (this.keyboard.SPACE.isDown && this.turn) {
-            this.timeSinceLastIncrement = 0;
+            this.hideDisplayCardEvent = this.time.addEvent({ delay: 3000, callback: this.hideDisplayCard, callbackScope: this });
             this.turn = false;
             this.displayingCard = true;
             this.landedCard(this.counter);
@@ -64,21 +66,37 @@ class scene2 extends Phaser.Scene {
     // sets up the card orderings and returns an array of cards
     setupCards() {
         let cardList = [];
-        for (let i = 0; i < cardCount; i++) {
-            let card = {age:"", type:"", special:""};
-            if (i < 33) {   
+        for (let i = 1; i <= cardCount; i++) {
+            let card = {age:"", type:"", special:"", landed: false, xpos: 0, ypos: 0, anglepos: 0};
+            if (i <= 33) {
                 card.age = "Child";
-            } else if (i < 66) {
+            } else if (i <= 66) {
                 card.age = "Adult"
             } else {
                 card.age = "OldAge"
             }
-            if (i % 3 === 0) {
+            if (i % 3 === 1) {
                 card.type = "Event";
-            } else if (i % 3 === 1) {
+            } else if (i % 3 === 2) {
                 card.type = "Lucky"
-            } else {
+            } else { // i % 3 === 0
                 card.type = "Misfortune"
+            }
+            if (i % 12 < 5) {
+                card.xpos = 150 + 600 * Math.round(i / 12);
+                card.ypos = 750 - 150 * (i % 6);
+            } else if (i % 12 === 5) {
+                card.xpos = 300 + 600 * Math.round(i / 12);
+                card.ypos = 100;
+                card.anglepos = 90;
+            } else if (i % 12 < 11) {
+                card.xpos = 600 * Math.round(i / 12) - 150;
+                card.ypos = 150 + 150 * (i % 6);
+                card.anglepos = 180;
+            } else { // i % 12 === 11
+                card.xpos = 600 * Math.round(i / 12);
+                card.ypos = 800;
+                card.anglepos = 90;
             }
             cardList.push(card);
         }
@@ -92,23 +110,9 @@ class scene2 extends Phaser.Scene {
         this.startCard.setOrigin(0.5);
         let cards = [this.startCard];
         for (let i = 1; i <= cardCount; i++) {
-            let cardVersion = 'card' + cardList[i - 1].age + cardList[i - 1].type;
-            if (i % 12 < 5) {
-                this.card = this.add.sprite(150 + 600 * Math.round(i / 12), 750 - 150 * (i % 6), cardVersion);
-                this.card.setScale(0.175);
-            } else if (i % 12 === 5) {
-                this.card = this.add.sprite(300 + 600 * Math.round(i / 12), 100, cardVersion);
-                this.card.setScale(0.175);
-                this.card.setAngle(90);
-            } else if (i % 12 < 11) {
-                this.card = this.add.sprite(600 * Math.round(i / 12) - 150, 150 + 150 * (i % 6), cardVersion);
-                this.card.setScale(0.175);
-                this.card.setAngle(180);
-            } else {// i % 12 === 11
-                this.card = this.add.sprite(600 * Math.round(i / 12), 800, cardVersion);
-                this.card.setScale(0.175);
-                this.card.setAngle(90);
-            }
+            this.card = this.add.sprite(cardList[i - 1].xpos, cardList[i - 1].ypos, 'card' + cardList[i - 1].age + cardList[i - 1].type);
+            this.card.setAngle(cardList[i - 1].anglepos);
+            this.card.setScale(0.175);
             this.card.setOrigin(0.5);
             cards.push(this.card);
         }
@@ -126,6 +130,11 @@ class scene2 extends Phaser.Scene {
         card.setY(450);
         card.setScale(1);
         this.allCardsGroup.bringToTop(card);
+    }
+
+    hideDisplayCard() {
+        this.allCardsGroup.last.destroy();
+        this.displayingCard = false;
     }
 
     /* rolls a die and returns the value (1 to 6) */
