@@ -20,6 +20,9 @@ io.on('connection', socket => {
         const {Client} = require('pg');
         const client = new Client({
             connectionString: process.env.DATABASE_URL,
+            ssl: {
+                rejectUnauthorized: false
+            }
         })
         client.connect();
         client.query('SELECT * FROM bad;', (err, res) => {
