@@ -16,6 +16,26 @@ var roomList = [];
 
 // Run when client connects
 io.on('connection', socket => {
+    socket.on('testDB', (filler) => {
+        const {Client} = require('pg');
+        const client = new Client({
+            connectionString: process.env.DATABASE_URL,
+            ssl: {
+                rejectUnauthorized: false
+            }
+        })
+        client.connect();
+        client.query('SELECT * FROM bad;', (err, res) => {
+            if (err) {
+                console.log("Test");
+            }
+            ;
+            for (let row of res.rows) {
+                console.log(JSON.stringify(row));
+            }
+            client.end();
+        })
+    });
 
     // Checks if the room is full and responds with an appropriate signaling event
     socket.on('joinTest', ({room}) => {
