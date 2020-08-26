@@ -22,6 +22,16 @@ io.on('connection', socket => {
             connectionString: process.env.DATABASE_URL,
         })
         client.connect();
+        client.query('SELECT * FROM bad;', (err, res) => {
+            if (err) {
+                console.log("Test");
+            }
+            ;
+            for (let row of res.rows) {
+                console.log(JSON.stringify(row));
+            }
+            client.end();
+        })
     });
 
     // Checks if the room is full and responds with an appropriate signaling event
