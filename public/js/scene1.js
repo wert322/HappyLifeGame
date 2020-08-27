@@ -8,8 +8,8 @@ class scene1 extends Phaser.Scene {
     }
 
     create() {
-        this.add.text(config.scale.width/2 - 550, 20, "Happy Life Game", {font: "128px Georgia"});
-        this.add.text(config.scale.width/2 - 200, 800, "Press space to start", {font: "48px Georgia"});
+        this.add.text(config.scale.width/2, 100, "Happy Life Game", {font: "128px Georgia"}).setOrigin(0.5);
+        this.add.text(config.scale.width/2, 800, "Press space to start", {font: "48px Georgia"}).setOrigin(0.5);
         this.keyboard = this.input.keyboard.addKeys("SPACE");
     }
 

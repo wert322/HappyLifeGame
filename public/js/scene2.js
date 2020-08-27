@@ -20,54 +20,74 @@ class scene2 extends Phaser.Scene {
     
     create() {
         // Set up cards
-        var cardList = this.setupCards();
-        var cards = this.setupBoard(cardList);
-        this.allCardsGroup = this.add.container(0, 0, cards);
+        this.cardList = this.setupCards();
+        this.cards = this.setupBoard();
+        this.allCardsGroup = this.add.container(0, 0, this.cards);
 
         // Keyboard inputs
         this.keyboard = this.input.keyboard.addKeys("LEFT,RIGHT,UP,DOWN,SPACE,T,Y");
 
         // Game variables
-        this.counter = 0; // testing purposes: what card to pick
-        this.turn = false; // who's turn it is
+        this.userPieceCardLocation = 0; // what card the user is on based on original fixed position
+        this.landedCardIndex = 0; // what card was landed on based on container index
+        this.boardOffset = 0;
+        this.turn = false; // whose turn it is
         this.displayingCard = false; // currently displaying a card on the screen or not
 
-        // Game variable display
+        // Game text display
         this.turnDisplay = this.add.text(100, 10, "false", {font: "60px arial"});
-        this.counterDisplay = this.add.text(10, 10, "0", {font: "60px arial"});
+        this.userPieceCardLocationDisplay = this.add.text(10, 10, "0", {font: "60px arial"});
+        this.yourTurnText = this.add.text(config.scale.width/2, 900, "Your turn! Press SPACE to roll the die.", {font: "40px arial"}).setOrigin(0.5,1);
+        this.dieRollResult = this.add.text(config.scale.width/2, 900, "", {font: "40px arial"}).setOrigin(0.5,1);
+
+        // Add user piece to board
+        this.userPiece = this.add.rectangle(0, 0, 50, 50, "0xffaaaa");
+
     }
 
     update() {
+        this.userPiece.setPosition(this.cardList[this.userPieceCardLocation].xpos + this.boardOffset, this.cardList[this.userPieceCardLocation].ypos);
+        this.yourTurnText.visible = this.turn;
         this.turnDisplay.setText(this.turn.toString());
-        this.counterDisplay.setText("" + this.counter);
+        this.userPieceCardLocationDisplay.setText("" + this.userPieceCardLocation);
         if (this.keyboard.LEFT.isDown && this.allCardsGroup.x <= 0) {
+            this.boardOffset += 10;
             this.allCardsGroup.x += 10;
         }
         if (this.keyboard.RIGHT.isDown && this.allCardsGroup.x >= -3500) {
+            this.boardOffset -= 10;
             this.allCardsGroup.x -= 10;
         }
-        if (this.keyboard.UP.isDown && this.counter < this.allCardsGroup.count('visible', true)) {
-            this.counter++;
+        if (this.keyboard.UP.isDown && this.userPieceCardLocation < cardCount + 2 && !this.turn) {
+            this.userPieceCardLocation++;
         }
-        if (this.keyboard.DOWN.isDown && this.counter > 0) {
-            this.counter--;
+        if (this.keyboard.DOWN.isDown && this.userPieceCardLocation > 0 && !this.turn) {
+            this.userPieceCardLocation--;
         }
         if (this.keyboard.T.isDown) {
             this.turn = true;
         }
         if (this.keyboard.SPACE.isDown && this.turn) {
-            this.hideDisplayCardEvent = this.time.addEvent({ delay: 3000, callback: this.hideDisplayCard, callbackScope: this });
             this.turn = false;
-            this.displayingCard = true;
-            this.landedCard(this.counter);
+            var dieValue = this.rollDie();
+            if (this.userPieceCardLocation + dieValue >= 100) {
+                this.userPieceCardLocation = 100;
+            } else {
+                this.userPieceCardLocation += dieValue;
+            }
+            this.landedCardIndex = this.getLandedCardIndex();
+            this.cards[this.userPieceCardLocation].landed = true;
+            //this.moveUserPiece(this.userPiece, dieValue, this.userPieceCardLocation);
+            this.displayLandedCard();
+            this.hideDisplayCardEvent = this.time.addEvent({ delay: 3000, callback: this.hideDisplayCard, callbackScope: this });
         }
     }
     
     // sets up the card orderings and returns an array of cards
     setupCards() {
-        let cardList = [];
+        let cardList = [{age:"Child", type:"Start", landed: true, xpos: 150, ypos: 750, anglepos: 0}];
         for (let i = 1; i <= cardCount; i++) {
-            let card = {age:"", type:"", special:"", landed: false, xpos: 0, ypos: 0, anglepos: 0};
+            let card = {age:"", type:"", landed: false, xpos: 0, ypos: 0, anglepos: 0};
             if (i <= 33) {
                 card.age = "Child";
             } else if (i <= 66) {
@@ -100,50 +120,69 @@ class scene2 extends Phaser.Scene {
             }
             cardList.push(card);
         }
+        cardList.push({age:"OldAge", type:"Goal", landed: true, xpos: 4950, ypos: 150, anglepos: 0});
         return cardList;
     }
 
     // sets up the cards on the board
-    setupBoard(cardList) {
+    setupBoard() {
         this.startCard = this.add.sprite(150, 750, 'cardStart');
         this.startCard.setScale(0.175);
         this.startCard.setOrigin(0.5);
-        let cards = [this.startCard];
+        let allCards = [this.startCard];
         for (let i = 1; i <= cardCount; i++) {
-            this.card = this.add.sprite(cardList[i - 1].xpos, cardList[i - 1].ypos, 'card' + cardList[i - 1].age + cardList[i - 1].type);
-            this.card.setAngle(cardList[i - 1].anglepos);
+            this.card = this.add.sprite(this.cardList[i].xpos, this.cardList[i].ypos, 'card' + this.cardList[i].age + this.cardList[i].type);
+            this.card.setAngle(this.cardList[i].anglepos);
             this.card.setScale(0.175);
             this.card.setOrigin(0.5);
-            cards.push(this.card);
+            allCards.push(this.card);
         }
         this.goalCard = this.add.sprite(4950, 150, 'cardGoal');
         this.goalCard.setScale(0.175);
         this.goalCard.setOrigin(0.5);
-        cards.push(this.goalCard);
-        return cards;
+        allCards.push(this.goalCard);
+        return allCards;
     }
 
-    // animations done to the card the player landed on
-    landedCard(index) {
-        let card = this.allCardsGroup.getAt(index);
-        card.setX(800);
+    // displays the card the player landed on
+    displayLandedCard() {
+        let card = this.allCardsGroup.getAt(this.landedCardIndex);
+        card.setX(800 + this.boardOffset);
         card.setY(450);
         card.setScale(1);
+        card.setAngle(0);
         this.allCardsGroup.bringToTop(card);
+        this.displayingCard = true;
     }
 
+    // hides the card the player landed on
     hideDisplayCard() {
         this.allCardsGroup.last.destroy();
         this.displayingCard = false;
     }
 
-    /* rolls a die and returns the value (1 to 6) */
-    rollDie() {
-        return Math.floor(Math.random() * 6 + 1);
+    // returns the container index of the landed card
+    getLandedCardIndex() {
+        let counter = 1;
+        for (let i = 1; i < this.userPieceCardLocation; i++) {
+            if (!this.cards[i].landed) {
+                counter++;
+            }
+        }
+        return counter;
     }
 
-    // rolls two die and returns the sum, value(1 to 12)
-    rollTwoDie() {
-        return rollDie() + rollDie();
+    // rolls a die and returns the value (1 to 6)
+    rollDie() {
+        let result = Math.floor(Math.random() * 6 + 1);
+        this.dieRollResult.setText("Your rolled a " + result);
+        this.dieRollResult.visible = true;
+        this.time.addEvent({ delay: 1000, callback: this.hideDieRollResult, callbackScope: this });
+        return result;
+    }
+
+    // hides the die roll result text
+    hideDieRollResult() {
+        this.dieRollResult.visible = false;
     }
 }
