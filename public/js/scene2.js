@@ -34,6 +34,9 @@ class scene2 extends Phaser.Scene {
         this.turn = false; // whose turn it is
         this.displayingCard = false; // currently displaying a card on the screen or not
 
+        // Game side display
+        this.sideInfo = this.add.rectangle(1400, 450, 400, 900, "0xffffff");
+
         // Game text display
         this.turnDisplay = this.add.text(100, 10, "false", {font: "60px arial"});
         this.userPieceCardLocationDisplay = this.add.text(10, 10, "0", {font: "60px arial"});
@@ -54,7 +57,7 @@ class scene2 extends Phaser.Scene {
             this.boardOffset += 10;
             this.allCardsGroup.x += 10;
         }
-        if (this.keyboard.RIGHT.isDown && this.allCardsGroup.x >= -3500) {
+        if (this.keyboard.RIGHT.isDown && this.allCardsGroup.x >= -3900) {
             this.boardOffset -= 10;
             this.allCardsGroup.x -= 10;
         }
@@ -91,16 +94,16 @@ class scene2 extends Phaser.Scene {
             if (i <= 33) {
                 card.age = "Child";
             } else if (i <= 66) {
-                card.age = "Adult"
+                card.age = "Adult";
             } else {
-                card.age = "OldAge"
+                card.age = "OldAge";
             }
             if (i % 3 === 1) {
                 card.type = "Event";
             } else if (i % 3 === 2) {
-                card.type = "Lucky"
+                card.type = "Lucky";
             } else { // i % 3 === 0
-                card.type = "Misfortune"
+                card.type = "Misfortune";
             }
             if (i % 12 < 5) {
                 card.xpos = 150 + 600 * Math.round(i / 12);
