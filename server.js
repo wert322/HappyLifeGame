@@ -4,7 +4,7 @@ const express = require('express');
 const socketio = require('socket.io');
 const formatMessage = require('./utils/messages');
 const { userJoin, getCurrentUser, userLeave, getRoomUsers } = require('./utils/users');
-const pullCard = require('./utils/gamefunctions');
+const {pullCard, createCardSet, deleteCardSet} = require('./utils/gamefunctions');
 
 const app = express();
 const server = http.createServer(app);
@@ -55,6 +55,7 @@ io.on('connection', socket => {
             // Checks if this room has already been made, and adds to the list if not
             if (roomList.indexOf(room) === -1) {
                 roomList.push(room);
+                createCardSet(room, client);
             }
 
             // Welcome current user
@@ -94,6 +95,7 @@ io.on('connection', socket => {
         
         // Removes room from list if it's no longer populated/active
         if (user && getRoomUsers(user.room).length === 0) {
+            deleteCardSet(user.room,client);
             var indexPlace = roomList.indexOf(user.room);
             if (indexPlace > -1) {
                 roomList.splice(indexPlace, 1);
