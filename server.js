@@ -4,7 +4,7 @@ const express = require('express');
 const socketio = require('socket.io');
 const formatMessage = require('./utils/messages');
 const { userJoin, getCurrentUser, userLeave, getRoomUsers } = require('./utils/users');
-const {pullCard, createCardSet, deleteCardSet} = require('./utils/gamefunctions');
+const {pullCard, createCardSet, deleteCardSet, addUser, removeUser} = require('./utils/gamefunctions');
 
 const app = express();
 const server = http.createServer(app);
@@ -58,6 +58,9 @@ io.on('connection', socket => {
                 createCardSet(room, client);
             }
 
+            // Initializes the user in the DB
+            addUser(socket, client);
+            
             // Welcome current user
             socket.emit('message', formatMessage(botName, 'Welcome!'));
 
@@ -92,6 +95,9 @@ io.on('connection', socket => {
     // Runs when client disconnects
     socket.on('disconnect', () => {
         const user = userLeave(socket.id);
+        
+        // Removes the user from the db
+        removeUser(socket, client);
         
         // Removes room from list if it's no longer populated/active
         if (user && getRoomUsers(user.room).length === 0) {

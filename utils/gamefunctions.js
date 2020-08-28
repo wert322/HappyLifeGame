@@ -3,13 +3,33 @@ const { userJoin, getCurrentUser, userLeave, getRoomUsers } = require('./users')
 function createCardSet(room, client) {
     const text = 'INSERT INTO cardset(roomname, eventadult, eventold, remainder) VALUES($1,$2,$3,$4)';
     const values = [room, [], [], []];
-    client.query(text, values);
+    client
+        .query(text, values)
+        .catch (e => console.error(e.stack));;
 }
 
 function deleteCardSet(room, client) {
     const text = 'DELETE FROM cardset WHERE roomname = $1';
     const values = [room];
-    client.query(text, values);
+    client
+        .query(text, values)
+        .catch (e => console.error(e.stack));;
+}
+
+function addUser(socket, client) {
+    const text = 'INSERT INTO users(id, balance, children, traits, married, room) VALUES($1,$2,$3,$4,$5,$6)';
+    const values = [socket.id, 0, 0, [], false, getCurrentUser(socket.id).room];
+    client
+        .query(text,values)
+        .catch (e => console.error(e.stack));
+}
+
+function removeUser(socket, client) {
+    const text = 'DELETE FROM users WHERE id = $1';
+    const values = [socket.id];
+    client
+        .query(text,values)
+        .catch (e => console.error(e.stack));
 }
 
 
@@ -34,11 +54,12 @@ function pullCard(cardtype, age, client, socket, io) {
                     if (traitcard === 1) {
                         giveTrait(tempRow, socket, io);
                     }
+                    var tempDescription = tempRow.description;
+                    var tempIcon = tempRow.icon;
+                    var tempUser = getCurrentUser(socket.id);
+                    io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon});
                 }
-                var tempDescription = tempRow.description;
-                var tempIcon = tempRow.icon;
-                var tempUser = getCurrentUser(socket.id);
-                io.to(tempUser.room).emit('showGBCard', {tempDescription, tempIcon});
+
             }
         })
     } else if (cardtype === 'bad') {
@@ -49,8 +70,13 @@ function pullCard(cardtype, age, client, socket, io) {
 }
 
 // For good cards that have traits = 2
-function doubleTraits() {
-
+function doubleTraits(tempRow, socket, io) {
+    let result = Math.floor(Math.random() * 6 + 1);
+    if (result < 4) {
+        // update trait array to include T3
+    } else {
+        // update trait array to include T4
+    }
 }
 
 // Used to update the money of cards, used for all types. Can take in good dice roll cards
@@ -70,7 +96,7 @@ function giveTrait() {
 
 
 
-module.exports = {pullCard, createCardSet, deleteCardSet};
+module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser};
 
 /*     const text = 'SELECT * FROM '
 client.query('SELECT * FROM bad;', (err, res) => {
