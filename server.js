@@ -26,8 +26,8 @@ client.connect();
 // Run when client connects
 io.on('connection', socket => {
 
-    socket.on('drawCard', ({}) => {
-        pullCard(filler, client);
+    socket.on('drawCard', ({cardtype}) => {
+        pullCard(cardtype, age, client, socket, io);
     });
 
     // Checks if the room is full and responds with an appropriate signaling event
@@ -95,7 +95,7 @@ io.on('connection', socket => {
         
         // Removes room from list if it's no longer populated/active
         if (user && getRoomUsers(user.room).length === 0) {
-            deleteCardSet(user.room,client);
+            deleteCardSet(user.room, client);
             var indexPlace = roomList.indexOf(user.room);
             if (indexPlace > -1) {
                 roomList.splice(indexPlace, 1);
