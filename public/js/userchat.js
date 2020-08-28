@@ -72,7 +72,7 @@ function outputMessage(message) {
     phrase.appendChild(document.createTextNode(message.time));
     div.appendChild(phrase);
     div.appendChild(document.createTextNode(" " + message.username));
-    var phraseTwo = document.createElement("span")
+    var phraseTwo = document.createElement("span");
     phraseTwo.setAttribute("id", "text");
     phraseTwo.appendChild(document.createTextNode(" " + message.text));
     div.appendChild(phraseTwo);
