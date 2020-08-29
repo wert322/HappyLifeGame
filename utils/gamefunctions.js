@@ -5,7 +5,7 @@ const e = require('express');
 
 // Creates the array that holds the pulled cards for each room
 function createCardSet(room, client) {
-    const text = 'INSERT INTO cardset(roomname, eventadult, eventold, remainder) VALUES($1,$2,$3,$4)';
+    const text = 'INSERT INTO cardsets(roomname, eventadult, eventold, remainder) VALUES($1,$2,$3,$4)';
     const values = [room, [], [], []];
     client
         .query(text, values)
@@ -14,7 +14,7 @@ function createCardSet(room, client) {
 
 // Deletes the array that holds the pulled cards for each room when they are emptied
 function deleteCardSet(room, client) {
-    const text = 'DELETE FROM cardset WHERE roomname = $1';
+    const text = 'DELETE FROM cardsets WHERE roomname = $1';
     const values = [room];
     client
         .query(text, values)
@@ -42,8 +42,9 @@ function removeUser(socket, client) {
 // Takes the type of card and age zone, does the proper updates to the user's data, and emits the proper information to display the card
 function pullCard(cardtype, age, client, socket, io) {
     if (cardtype === 'good') {
-        const text = 'SELECT * FROM good WHERE age = $1 ORDER BY RANDOM() LIMIT 1';
-        const values = [age];
+        let tempArray = getCardSet(temp, socket, client, 'remainder');
+        const text = 'SELECT * FROM good WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
+        const values = [age, tempArray];
         client.query(text, values, (err, res) => {
             if (err) {
                 console.log(err);
@@ -67,11 +68,13 @@ function pullCard(cardtype, age, client, socket, io) {
                         io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon});
                     }
                 }
+                discardCard(tempRow, socket, client, 'remainder');
             }
         })
     } else if (cardtype === 'bad') {
-        const text = 'SELECT * FROM bad WHERE age = $1 ORDER BY RANDOM() LIMIT 1';
-        const values = [age];
+        let tempArray = getCardSet(temp, socket, client, 'remainder');
+        const text = 'SELECT * FROM bad WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
+        const values = [age, tempArray];
         client.query(text, values, (err, res) => {
             if (err) {
                 console.log(err);
@@ -97,10 +100,20 @@ function pullCard(cardtype, age, client, socket, io) {
                         io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon});
                     }
                 }
+                discardCard(tempRow, socket, client, 'remainder');
             }
         });
     } else {
+        if (age = 'Child') {
+            let tempArray = getCardSet(temp, socket, client, 'remainder');
+            const text = 'SELECT * FROM events WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
+            const values = [age, tempArray];
+            client.query(text, values, (err, res) => {
+        
+            });
+        } else {
 
+        }
     }
 }
 
@@ -182,10 +195,10 @@ function goodMobility(tempRow, socket, io) {
 }
 
 // Takes the player and the value of the sum to be added or subtracted, and updates the DB accordingly. Adds in the coefficient too
-function updateBalance(client, socket, value, io) {
+function updateBalance(client, socket, sumvalue, io) {
     let tempID = socket.id;
     let tempBalance = getBalance(client, tempID);
-    tempBalance += value;
+    tempBalance += sumvalue;
     const text = 'UPDATE users SET balance = $1 WHERE id = $2';
     const value = [tempBalance, tempID];
     client
@@ -325,7 +338,7 @@ function kidnapping(tempRow, socket, client, io) {
     var changePhrase = 'You rolled a ' + result;
     if (result < 5 || result > 9) {
         changePhrase = changePhrase + '. Unfortunately you are kidnapped and you lose your next turn.';
-        // Lose turn method
+        loseTurn(tempRow, socket, client, io);
     } else {
         var tempValue = tempRow.value;
         var tempCoefficient = getCoefficient(client, 'penalty', socket.id);
@@ -342,7 +355,29 @@ function loseTurn(tempRow, socket, client, io) {
     socket.emit('loseNextTurn', {turns: 1});
 }
 
+// Adds the passed in card ID to the matching set, so that it is essentially discarded
+function discardCard(tempRow, socket, client, setType) {
+    var tempRoom = getCurrentUser(socket.id).room;
+    var tempArray = getCardSet(tempRow, socket, client, setType);
+    tempArray.push(tempRow.id);
+    const text = 'UPDATE cardsets SET $1 WHERE roomname = $2';
+    const values = [tempArray, tempRoom];
+    client
+        .query(text, values)
+        .catch(e => console.error(e.stack));
+}
 
+function getCardSet(tempRow, socket, client, setType) {
+    var tempRoom = getCurrentUser(socket.id).room;
+    const text = 'SELECT $1 FROM cardsets WHERE roomname = $2 LIMIT 1';
+    const values = [setType, tempRoom];
+    client
+        .query(text, values)
+        .then(res => {
+            return res.rows[0].setType;
+        })
+        .catch(e => console.error(e.stack));
+}
 
 module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser};
 
