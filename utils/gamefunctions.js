@@ -23,8 +23,8 @@ function deleteCardSet(room, client) {
 
 // Adds the user to the users table
 function addUser(socket, client) {
-    const text = 'INSERT INTO users(id, balance, children, traits, married, room, receiving, giving, earning, penalty, college) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)';
-    const values = [socket.id, 0, 0, [], null, getCurrentUser(socket.id).room, 1, 1, 1, 1, 1];
+    const text = 'INSERT INTO users(id, balance, children, traits, married, room, receiving, giving, earning, penalty, college, alive) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)';
+    const values = [socket.id, 0, 0, [], null, getCurrentUser(socket.id).room, 1, 1, 1, 1, 1, true];
     client
         .query(text,values)
         .catch (e => console.error(e.stack));
@@ -52,19 +52,20 @@ function pullCard(cardtype, age, client, socket, io) {
                 if (tempRow.traitcard === 2) {
                     doubleTraits(tempRow, socket, io, client);
                 } else {
-                    if (tempRow.money) {
-                        moneyUpdate(tempRow,'good', socket, io, client);
-                    }
                     if (tempRow.mobility) {
                         goodMobility(tempRow, socket, io);
                     }
                     if (tempRow.traitcard === 1) {
                         giveTrait(tempRow, socket, io, client);
                     }
-                    // var tempDescription = tempRow.description;
-                    // var tempIcon = tempRow.icon;
-                    // var tempUser = getCurrentUser(socket.id);
-                    // io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon});
+                    if (tempRow.money) {
+                        moneyUpdate(tempRow,'good', socket, io, client);
+                    } else {
+                        let tempDescription = tempRow.description;
+                        let tempIcon = tempRow.icon;
+                        let tempUser = getCurrentUser(socket.id);
+                        io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon});
+                    }
                 }
             }
         })
@@ -77,18 +78,23 @@ function pullCard(cardtype, age, client, socket, io) {
             } else {
                 var tempRow = res.rows[0];
                 if (tempRow.id === 'BC1' || tempRow.id === 'BA5') {
-                    // sudden death
+                    suddenDeath(tempRow, socket, client, io);
                 } else if (tempRow.id === 'BC5'){
-                    // kidnapping
+                    kidnapping(tempRow, socket, client, io);
                 } else {
                     if (tempRow.traitcard) {
-                        
-                    }
-                    if (tempRow.money) {
-
+                        giveTrait(tempRow, socket, io, client);
                     }
                     if (tempRow.loseturn) {
-
+                        loseTurn(tempRow, socket, io, client);
+                    }
+                    if (tempRow.money) {
+                        moneyUpdate(tempRow,'bad', socket, io, client);
+                    } else {
+                        let tempDescription = tempRow.description;
+                        let tempIcon = tempRow.icon;
+                        let tempUser = getCurrentUser(socket.id);
+                        io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon});
                     }
                 }
             }
@@ -117,7 +123,7 @@ function doubleTraits(tempRow, socket, io, client) {
     var tempUser = getCurrentUser(socket.id);
     var tempDescription = tempRow.description;
     var tempIcon = tempRow.icon;
-    io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, changePhrase})
+    io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, changePhrase});
 }
 
 // Used to give trait cards, used for all types
@@ -133,25 +139,37 @@ function giveTrait(tempRow, socket, io, client) {
     }
 }
 
-// Used to update the money of cards, used for all types. Can take in good dice roll cards. Adds in the coefficient too
+// Used to update the money of cards, used for all types. Can take in good dice roll cards. Adds in the coefficient 
 function moneyUpdate(tempRow, type, socket, io, client) {
     var tempDescription = tempRow.description;
     var tempIcon = tempRow.icon;
     var tempUser = getCurrentUser(socket.id);
+    var tempCoefficient;
+    var tempValue = tempRow.value;
     if (type === 'good') {
-        var tempCoefficient = getCoefficient(client, 'earning', socket.id);
-        var tempValue = tempRow.value;
+        tempCoefficient = getCoefficient(client, 'earning', socket.id);
         tempValue *= tempCoefficient;
         if (tempRow.rolldice) {
             var result = Math.floor(Math.random() * 6 + 1);
             tempValue *= result;
-            var changePhrase = 'You rolled a ' + result + ', and received ' + tempValue + ' yen as a result.';
+            var changePhrase = 'You rolled a ' + result + ', and received ' + tempValue + ' million yen as a result.';
             io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, changePhrase});
         } 
         updateBalance(client, socket, tempValue, io);
         io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon});
     } else if (type === 'bad') {
-        // For penalties
+        tempCoefficient = getCoefficient(client, 'earning', socket.id);
+        if (tempRow.percent) {
+            tempValue = 1 - tempValue;
+            tempValue *= tempCoefficient;
+            let tempBalance = getBalance(client, socket.id);
+            tempValue *= tempBalance;
+        } else {
+            tempValue *= tempCoefficient;
+        }
+        tempValue *= -1;
+        updateBalance(client, socket, tempValue, io);
+        io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon});
     } else {
         // For events: MORE COMPLEX
     }
@@ -163,7 +181,7 @@ function goodMobility(tempRow, socket, io) {
     socket.emit('addSpacesNext', {tempSquares});
 }
 
-// Takes the player and the value of the sum to be added or subtracted, and updates the DB accordingly
+// Takes the player and the value of the sum to be added or subtracted, and updates the DB accordingly. Adds in the coefficient too
 function updateBalance(client, socket, value, io) {
     let tempID = socket.id;
     let tempBalance = getBalance(client, tempID);
@@ -267,6 +285,61 @@ function updateTraits(tempArray, client, id, trait) {
         updateCoefficient(client,'college',id,tempValue);
         tempValue = 1;
     }
+}
+
+// Takes the player and for either of the sudden death events (BC1 and BC5), rolls the dice and accordingly penalizes the player or kills them
+function suddenDeath(tempRow, socket, client, io) {
+    var tempDescription = tempRow.description;
+    var tempIcon = tempRow.icon;
+    var tempUser = getCurrentUser(socket.id);
+    var result = Math.floor(Math.random() * 6 + 1);
+    var result2 = Math.floor(Math.random() * 6 + 1);
+    result *= result2;
+    var customPhrase = 'You rolled a ' + result2;
+    if (result === 1 || result === 36) {
+        const text = 'UPDATE users SET alive = $1 WHERE id = $2';
+        const values = [false, socket.id];
+        client
+            .query(text, values)
+            .catch(e => console.error(e.stack));
+        customPhrase = customPhrase + ' and as a result, you have died. Better luck next time!';
+    } else {
+        var tempValue = tempRow.value;
+        var tempCoefficient = getCoefficient(client, 'penalty', socket.id);
+        tempValue *= tempCoefficient;
+        customPhrase = customPhrase + '. You survive, but you pay ' + tempValue + ' million yen in medical fees.';
+        tempValue *= -1;
+        updateBalance(client, socket, tempValue, io);
+    }
+    io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, customPhrase});
+}
+
+// Takes the player and for the kidnapping event (BC5), rolls the dice and accordingly penalizes the player or makes them lose a turn
+function kidnapping(tempRow, socket, client, io) {
+    var tempDescription = tempRow.description;
+    var tempIcon = tempRow.icon;
+    var tempUser = getCurrentUser(socket.id);
+    var result = Math.floor(Math.random() * 6 + 1);
+    var result2 = Math.floor(Math.random() * 6 + 1);
+    result += result2;
+    var changePhrase = 'You rolled a ' + result;
+    if (result < 5 || result > 9) {
+        changePhrase = changePhrase + '. Unfortunately you are kidnapped and you lose your next turn.';
+        // Lose turn method
+    } else {
+        var tempValue = tempRow.value;
+        var tempCoefficient = getCoefficient(client, 'penalty', socket.id);
+        tempValue *= tempCoefficient;
+        changePhrase = changePhrase + '. You pay a ransom of ' + tempValue + ' million yen to be set free.';
+        tempValue *= -1;
+        updateBalance(client, socket, tempValue, io);
+    }
+    io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, changePhrase});
+}
+
+// Emits event that the player should lose their next turn. Currently just emits hardcoded 1 turn, but can be changed to be dynamic
+function loseTurn(tempRow, socket, client, io) {
+    socket.emit('loseNextTurn', {turns: 1});
 }
 
 
