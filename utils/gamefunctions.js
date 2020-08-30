@@ -107,10 +107,23 @@ function pullCard(cardtype, age, client, socket, io) {
             }
         });
     } else {
+        let marriedStatus = getPartner(socket, client, io);
         let tempArray1 = getCardSet(socket, client, 'remainder');
         let tempArray2 = getCardSet(socket, client,'eventadult');
         let tempArray3 = getCardSet(socket, client, 'eventold');
-        let tempArray = tempArray1.concat(tempArray2).concat(tempArray3);
+        let tempArray = tempArray1;
+        if (marriedStatus == null) {
+            tempArray.concat(['EA1', 'EA2', 'EO1', 'EO2']);
+        } else {
+            tempArray.concat(['EA3', 'EO3']);
+        }
+        if (tempArray2.length === 8) {
+            tempArray2 = [];
+        }
+        if (tempArray3.length === 8) {
+            tempArray3 = [];
+        }
+        tempArray = tempArray.concat(tempArray2).concat(tempArray3);
         const text = 'SELECT * FROM events WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
         const values = [age, tempArray];
         client.query(text, values, (err, res) => {
@@ -456,7 +469,7 @@ function standardEvent(tempRow, socket, client, io, age) {
 // Takes in the given choice by ID and operates it based on the specific type
 function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
     var tempUser = getCurrentUser(socket.id);
-    let tempUsername = tempUser.usernmae;
+    let tempUsername = tempUser.username;
     if (choiceType === 'standard') {
         var tempArray = getTraits(client, socket.id);
         var tempChoice = getChoiceDetails(client, choiceID);
@@ -486,6 +499,13 @@ function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
         updateBalance(client, socket, tempValue, io);
         let tempPhrase = 'You rolled a ' + result + '. The result of your investment was a change of ' + tempValue + ' million yen.';
         io.to(tempUser.room).emit('showRegularChoice', {tempPhrase, tempUsername});
+    } else if (choiceType === 'divorce') {
+        updateDivorce(socket, client, io);
+        if (choiceID === 'C23') {
+
+        } else {
+
+        }
     }
 }
 
@@ -502,9 +522,41 @@ function getChoiceDetails(client, choiceID) {
 }
 
 function divorceCard(tempRow, socket, client, io) {
-    const text = 'SELECT '
+    const text = 'SELECT married FROM users WHERE id = $1';
+    const values = [socket.id];
+    client
+        .query(text, values)
+        .then (res => {
+            let tempMarriage = res.row[0];
+            if (tempMarriage.married != null) {
+                if (tempRow.id === 'EA1') {
+                    choicesUpdate(socket, client, io, 'C23', 'divorce', null);
+                } else {
+                    choicesUpdate(socket, client, io, 'C40', 'divorce', null);
+                }
+            } 
+        });
 }
 
+function updateDivorce(socket, client, io) {
+    let tempID = socket.id;
+    const text = 'UPDATE users SET married = $1 WHERE id = $2';
+    const values = [null, tempID];
+    client
+        .query(text, values)
+        .catch (e => console.error(e.stack));
+}
+
+function getPartner(socket, client, io) {
+    let tempID = socket.id;
+    const text = 'SELECT married FROM users WHERE id = $1';
+    const values = [tempID];
+    client
+        .query(text, values)
+        .then (res => {
+            return res.row[0].married;
+    });
+}
 
 
 module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser};
