@@ -112,8 +112,7 @@ function pullCard(cardtype, age, client, socket, io) {
                 console.log(err);
             } else {
                 var tempRow = res.rows[0];
-                standardEvent(tempRow, socket, client, io);
-
+                standardEvent(tempRow, socket, client, io, age);
             }
         });
     }
@@ -377,6 +376,7 @@ function discardCard(tempRow, socket, client, setType) {
         .catch(e => console.error(e.stack));
 }
 
+// Gets the current set of discarded cards in the specified room
 function getCardSet(socket, client, setType) {
     var tempRoom = getCurrentUser(socket.id).room;
     const text = 'SELECT $1 FROM cardsets WHERE roomname = $2 LIMIT 1';
@@ -389,17 +389,60 @@ function getCardSet(socket, client, setType) {
         .catch(e => console.error(e.stack));
 }
 
-function standardEvent(tempRow, socket, client, io) {
-    if (tempRow.choice1text != null) {
-        let tempArray = [tempRow.choice1text, tempRow.choice1, tempRow.choice2text, tempRow.choice2]
+//  Takes the specified event and obtains the user's response before then operating on it. Also takes into account special situations and passes the corresponding type to helper methods
+function standardEvent(tempRow, socket, client, io, age) {
+    if (tempRow.choice1text != null && tempRow.id != 'EA6' && tempRow.id != 'EO5') {
+        let tempArray = [tempRow.choice1text, tempRow.choice1, tempRow.choice2text, tempRow.choice2];
+        let setType;
         socket.emit('twoChoiceEvent', {tempArray});
         socket.on('twoChoiceResponse', ({choiceID}) => {
-            choicesUpdate(socket, client, io, choiceID, 'standard');
+            choicesUpdate(socket, client, io, choiceID, 'standard', null);
         })
-    }
+        if (age === 'Child') {
+            setType = 'remainder';
+        } else if (age === 'Adult') {
+            setType = 'eventadult';
+        } else {
+            setType = 'eventold';
+        }
+        discardCard(tempRow, socket, client, setType);
+    } else if (tempRow.id === 'EA6' || tempRow.id === 'EO5') {
+        let tempArray = [tempRow.choice1text, tempRow.choice1, tempRow.choice2text, tempRow.choice2];
+        let setType;
+        socket.emit('investChoiceEvent', {tempArray});
+        socket.on('investChoiceResponse', ({choiceID, input}) => {
+            if (choiceID === 'C28') {
+                choicesUpdate(socket, client, io, choiceID, 'invest', input);
+            } else {
+                choicesUpdate(socket, client, io, choiceID, 'standard', null);
+            }
+        })
+        if (age === 'Adult') {
+            setType = 'eventadult';
+        } else {
+            setType = 'eventold';
+        }
+        discardCard(tempRow, socket, client, setType);
+    } else if (tempRow.id === 'EA1' || tempRow.id === 'EO1') {
+
+    } else if (tempRow.id === 'EA2' || tempRow.id === 'EO2') {
+
+    } else if (tempRow.id === 'EA3' || tempRow.id === 'EO3') {
+
+    } else if (tempRow.id === 'EO6') {
+
+    } else if (tempRow.id === 'EO7') {
+
+    } else if (tempRow.id === 'EO10') {
+
+    } else {
+
+    }   //discardCard(tempRow, socket, client, setType)
 }
 
-function choicesUpdate(socket, client, io, choiceID, choiceType) {
+// Takes in the given choice by ID and operates it based on the specific type
+function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
+    var tempUser = getCurrentUser(socket.id);
     if (choiceType === 'standard') {
         var tempArray = getTraits(client, socket.id);
         var tempChoice = getChoiceDetails(client, choiceID);
@@ -414,8 +457,21 @@ function choicesUpdate(socket, client, io, choiceID, choiceType) {
             if (tempChoice.turnchange) {
                 loseTurn(socket, io, client);
             }
+            if (tempChoice.hastrait) {
+                giveTrait(tempChoice, socket, io, client);
+            }
         }
-        io.to(tempUser.room).emit('showRegularChoice', {tempDescription})
+        let tempDescription = tempChoice.description;
+        io.to(tempUser.room).emit('showRegularChoice', {tempDescription});
+    } else if (choiceType === 'invest') {
+        let result = Math.floor(Math.random() * 6 + 1);
+        let tempValue = input * result;
+        if (result % 2 === 1) {
+            tempValue *= -1;
+        }
+        updateBalance(client, socket, tempValue, io);
+        let tempPhrase = 'You rolled a ' + result + '. The result of your investment was a change of ' + tempValue + ' million yen.';
+        io.emit(tempUser.room).emit('showRegularChoice', {tempPhrase});
     }
 }
 

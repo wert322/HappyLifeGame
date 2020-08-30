@@ -26,7 +26,7 @@ client.connect();
 // Run when client connects
 io.on('connection', socket => {
 
-    socket.on('drawCard', ({cardtype}) => {
+    socket.on('drawCard', ({cardtype, age}) => {
         pullCard(cardtype, age, client, socket, io);
     });
 
