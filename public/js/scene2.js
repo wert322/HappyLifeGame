@@ -49,7 +49,8 @@ class scene2 extends Phaser.Scene {
         for (let i = 0; i < players.length; i++) {
             let playerPiece = this.add.rectangle(0, 0, 50, 50, players[i].playerColor);
             this.allPlayersContainer.add(playerPiece);
-            let playerInfoText = this.add.text(1250, 10 + 50 * i, players[i].name, {font: "30px arial", color: players[i].playerColor}).setOrigin(0,0)
+            let playerInfoText = this.add.text(1250, 10 + 50 * i, players[i].name, {font: "30px arial", color: players[i].playerColor}).setOrigin(0);
+            this.add.rectangle(1210, 10 + 50 * i, 30, 30, players[i].playerColor).setOrigin(0);
             this.allPlayerInfoText.add(playerInfoText);
         }
 
