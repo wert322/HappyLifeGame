@@ -108,11 +108,13 @@ function pullCard(cardtype, age, client, socket, io) {
         });
     } else {
         let marriedStatus = getPartner(socket, client, io);
+        let marriedCount = getMarriedCount(socket, client);
+        let totalCount = getRoomUsers(getCurrentUser(socket.id).room).length;
         let tempArray1 = getCardSet(socket, client, 'remainder');
         let tempArray2 = getCardSet(socket, client,'eventadult');
         let tempArray3 = getCardSet(socket, client, 'eventold');
         let tempArray = tempArray1;
-        if (marriedStatus == null) {
+        if (marriedStatus == null && totalCount - marriedCount > 1) {
             tempArray.concat(['EA1', 'EA2', 'EO1', 'EO2']);
         } else {
             tempArray.concat(['EA3', 'EO3']);
@@ -192,7 +194,7 @@ function moneyUpdate(tempRow, type, socket, io, client) {
         } else {
             io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon, tempUsername});
         }
-        updateBalance(client, socket, tempValue, io);
+        updateBalance(client, socket, socket.id, tempValue, io);
     } else if (type === 'bad') {
         tempCoefficient = getCoefficient(client, 'penalty', socket.id);
         if (tempRow.percent) {
@@ -204,7 +206,7 @@ function moneyUpdate(tempRow, type, socket, io, client) {
             tempValue *= tempCoefficient;
         }
         tempValue *= -1;
-        updateBalance(client, socket, tempValue, io);
+        updateBalance(client, socket, socket.id, tempValue, io);
         io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon, tempUsername});
     } else if (type === 'choice') {
         if (value < 0) {
@@ -213,7 +215,7 @@ function moneyUpdate(tempRow, type, socket, io, client) {
             tempCoefficient = getCoefficient(client, 'earning', socket.id);
         }
         tempValue *= tempCoefficient;
-        updateBalance(client, socket, tempValue, io);
+        updateBalance(client, socket, socket.id, tempValue, io);
         // For events: MORE COMPLEX
     } 
     // FOR NON STANDARD CHOICES
@@ -225,9 +227,9 @@ function goodMobility(tempRow, socket, io) {
     socket.emit('addSpacesNext', {tempSquares});
 }
 
-// Takes the player and the value of the sum to be added or subtracted, and updates the DB accordingly. Adds in the coefficient too
-function updateBalance(client, socket, sumvalue, io) {
-    let tempID = socket.id;
+// Takes the player and the value of the sum to be added or subtracted, and updates the DB accordingly
+function updateBalance(client, socket, id, sumvalue, io) {
+    let tempID = id;
     let tempBalance = getBalance(client, tempID);
     tempBalance += sumvalue;
     const text = 'UPDATE users SET balance = $1 WHERE id = $2';
@@ -339,13 +341,11 @@ function suddenDeath(tempRow, socket, client, io) {
     let tempUsername = tempUser.username;
     var result = Math.floor(Math.random() * 6 + 1);
     var result2 = Math.floor(Math.random() * 6 + 1);
-    let died = false;
     result *= result2;
     var customPhrase = 'You rolled a ' + result2;
     if (result === 1 || result === 36) {
         const text = 'UPDATE users SET alive = $1 WHERE id = $2';
         const values = [false, socket.id];
-        died = true;
         client
             .query(text, values)
             .catch(e => console.error(e.stack));
@@ -356,7 +356,7 @@ function suddenDeath(tempRow, socket, client, io) {
         tempValue *= tempCoefficient;
         customPhrase = customPhrase + '. You survive, but you pay ' + tempValue + ' million yen in medical fees.';
         tempValue *= -1;
-        updateBalance(client, socket, tempValue, io);
+        updateBalance(client, socket, socket.id, tempValue, io);
     }
     io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, customPhrase, tempUsername});
 }
@@ -380,7 +380,7 @@ function kidnapping(tempRow, socket, client, io) {
         tempValue *= tempCoefficient;
         changePhrase = changePhrase + '. You pay a ransom of ' + tempValue + ' million yen to be set free.';
         tempValue *= -1;
-        updateBalance(client, socket, tempValue, io);
+        updateBalance(client, socket, socket.id, tempValue, io);
     }
     io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, changePhrase, tempUsername});
 }
@@ -452,7 +452,7 @@ function standardEvent(tempRow, socket, client, io, age) {
     } else if (tempRow.id === 'EA1' || tempRow.id === 'EO1') { //Divorce   
         divorceCard(tempRow, socket, client, io);
     } else if (tempRow.id === 'EA2' || tempRow.id === 'EO2') { //Married
-        marriageCard();
+        marriageCard(tempRow, socket, client, io);
     } else if (tempRow.id === 'EA3' || tempRow.id === 'EO3') { //Children 
         childrenCard();
     } else if (tempRow.id === 'EO6') {  //Sell house
@@ -496,16 +496,41 @@ function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
         if (result % 2 === 1) {
             tempValue *= -1;
         }
-        updateBalance(client, socket, tempValue, io);
+        updateBalance(client, socket, socket.id, tempValue, io);
         let tempPhrase = 'You rolled a ' + result + '. The result of your investment was a change of ' + tempValue + ' million yen.';
         io.to(tempUser.room).emit('showRegularChoice', {tempPhrase, tempUsername});
     } else if (choiceType === 'divorce') {
-        updateDivorce(socket, client, io);
+        let partnerID = getPartner(socket, client, io);
+        updateMarriage(socket.id, client, io, null);
+        updateMarriage(partnerID, client, io, null);
+        let userC = getCoefficient(client, 'receiving', socket.id);
+        let partnerC = getCoefficient(client, 'giving', partnerID);
         if (choiceID === 'C23') {
-
+            userC *= 10;
+            partnerC *= -10;
+            updateBalance(client, socket, socket.id, userC, io);
+            updateBalance(client, socket, partnerID, partnerC, io);
         } else {
-
+            userC *= 20;
+            partnerC *= -20;
+            updateBalance(client, socket, socket.id, userC, io);
+            updateBalance(client, socket, partnerID, partnerC, io);
         }
+    } else if (choiceType === 'marriage') {
+        let tempArray = getRoomUsers(tempUser.room);
+        let userC;
+        let partnerC;
+        let thirdC;
+        tempArray.forEach(element => {
+            if (element.id !== socket.id && element.id !== input) {
+                userC = getCoefficient(client, 'receiving', socket.id) * 0.05;
+                partnerC = getCoefficient(client, 'receiving', socket) * 0.05;
+                thirdC = getCoefficient(client, 'giving', element.id) * -0.05;
+                updateBalance(client, socket, socket.id, userC, io);
+                updateBalance(client, socket, input, partnerC, io);
+                updateBalance(client, socket, element.id, thirdC, io);
+            }
+        });
     }
 }
 
@@ -521,6 +546,7 @@ function getChoiceDetails(client, choiceID) {
         .catch(e => console.error(e.stack));
 }
 
+// Handles divorce event cards. Top of the stack
 function divorceCard(tempRow, socket, client, io) {
     const text = 'SELECT married FROM users WHERE id = $1';
     const values = [socket.id];
@@ -535,18 +561,20 @@ function divorceCard(tempRow, socket, client, io) {
                     choicesUpdate(socket, client, io, 'C40', 'divorce', null);
                 }
             } 
-        });
+        })
+        .catch (e => console.error(e.stack));;
 }
 
-function updateDivorce(socket, client, io) {
-    let tempID = socket.id;
+// Takes the ID of a player and updates their married status
+function updateMarriage(id, client, io, input) {
     const text = 'UPDATE users SET married = $1 WHERE id = $2';
-    const values = [null, tempID];
+    const values = [input, id];
     client
         .query(text, values)
         .catch (e => console.error(e.stack));
 }
 
+// Takes the current user and returns the ID of their marriage partner. Null if there is no partner (unmarried)
 function getPartner(socket, client, io) {
     let tempID = socket.id;
     const text = 'SELECT married FROM users WHERE id = $1';
@@ -555,9 +583,48 @@ function getPartner(socket, client, io) {
         .query(text, values)
         .then (res => {
             return res.row[0].married;
+        })
+        .catch (e => console.error(e.stack));
+}
+
+// Handles the marriage event. Handles the checking of if they have the distrust trait and if they do, it prevents marriage while also removing those trait cards from their arrays
+function marriageCard(tempRow, socket, client, io) {
+    socket.emit('getPartnerID', {filler: true});
+    socket.on('getPartnerResponse', ({pID}) => {
+        let tempArray1 = getTraits(client, socket.id);
+        let tempArray2 = getTraits(client, pID);
+        if (!tempArray1.includes('T2') || !tempArray2.includes('T2')) {
+            updateMarriage(pID, client, io, socket.id);
+            updateMarriage(socket.id, client, io, pID);
+            choicesUpdate(socket, client, io, 'C25', 'marriage', pID);
+        } else {
+            if (tempArray1.includes('T2')) {
+                let index = tempArray1.indexOf('T2');
+                tempArray1.splice(index, 1);
+                updateTraits(tempArray1, client, socket.id, 'T2');
+            }
+            if (tempArray2.includes('T2')) {
+                let index = tempArray2.indexOf('T2');
+                tempArray2.splice(index, 1);
+                updateTraits(tempArray2, client, pID, 'T2');
+            }
+            choicesUpdate(socket, client, io, 'C50', 'standard', null);
+        }
     });
 }
 
+// Returns the number of married people in a room. Decides if marriage cards can still be landed on
+function getMarriedCount(socket, client) {
+    let tempRoom = getCurrentUser(socket.id).room;
+    const text = 'SELECT COUNT(*) FROM users WHERE room = $1 AND married IS NOT NULL';
+    const values = [tempRoom];
+    client
+        .query(text, values)
+        .then (res => {
+            return res.row[0].count;
+        })
+        .catch (e => console.error(e.stack));
+}
 
 module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser};
 
