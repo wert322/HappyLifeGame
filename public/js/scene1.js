@@ -30,22 +30,22 @@ class scene1 extends Phaser.Scene {
         for (let i = 0; i < users.length; i++) {
             var color = "";
             if (i === 0) {
-                color = "#FF9AA2";
+                color = "0xFF5757"; // red
             } else if (i === 1) {
-                color = "#FFB7B2";
+                color = "0xFF9C57"; // orange
             } else if (i === 2) {
-                color = "#FFDAC1";
+                color = "0xFFF4B7"; // yellow
             } else if (i === 3) {
-                color = "#E2F0CB";
+                color = "0xE2F0CB"; // green
             } else if (i === 4) {
-                color = "#85EAD7";
+                color = "0x85EAD7"; // light blue
             } else { // if i === 5
-                color = "#C7CEEA";
+                color = "0xC7CEEA"; // blue
             }
             if (users[i].username === username) {
                 userID = i;
             }
-            let user = {id: i, name: users[i].username, playerColor: color, location: 0, money: 0};
+            let user = {name: users[i].username, playerColor: color, location: 0, money: 0};
             players.push(user);
         }
     }

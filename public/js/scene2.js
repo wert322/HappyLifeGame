@@ -28,18 +28,17 @@ class scene2 extends Phaser.Scene {
         this.keyboard = this.input.keyboard.addKeys("LEFT,RIGHT,UP,DOWN,SPACE,T,Y");
 
         // Game variables
-        this.userPieceCardLocation = 0; // what card the user is on based on original fixed position
         this.landedCardIndex = 0; // what card was landed on based on container index
         this.boardOffset = 0;
-        this.turn = false; // whose turn it is
+        this.turn = 0; // whose turn it is (based off user ID)
         this.displayingCard = false; // currently displaying a card on the screen or not
 
         // Game side display
-        this.sideInfo = this.add.rectangle(1400, 450, 400, 900, "0xffffff");
+        this.sideInfo = this.add.rectangle(1400, 450, 400, 900, "0xFFFFFF");
 
         // Game text display
-        this.turnDisplay = this.add.text(100, 10, "false", {font: "60px arial"});
-        this.userPieceCardLocationDisplay = this.add.text(10, 10, "0", {font: "60px arial"});
+        this.turnDisplay = this.add.text(100, 10, "false", {font: "60px arial"}); // temporary
+        this.userPieceCardLocationDisplay = this.add.text(10, 10, "0", {font: "60px arial"}); // temporary
         this.yourTurnText = this.add.text(config.scale.width/2, 900, "Your turn! Press SPACE to roll the die.", {font: "40px arial"}).setOrigin(0.5,1);
         this.dieRollResult = this.add.text(config.scale.width/2, 900, "", {font: "40px arial"}).setOrigin(0.5,1);
 
@@ -48,12 +47,12 @@ class scene2 extends Phaser.Scene {
         this.allPlayerInfoText = this.add.container(0, 0);
         for (let i = 0; i < players.length; i++) {
             let playerPiece = this.add.rectangle(0, 0, 50, 50, players[i].playerColor);
-            this.allPlayersContainer.add(playerPiece);
-            let playerInfoText = this.add.text(1250, 10 + 50 * i, players[i].name, {font: "30px arial", color: players[i].playerColor}).setOrigin(0);
+
+            let playerInfoText = this.add.text(1250, 10 + 50 * i, players[i].name, {font: "30px arial", color: "0xFFF"}).setOrigin(0);
             this.add.rectangle(1210, 10 + 50 * i, 30, 30, players[i].playerColor).setOrigin(0);
+            this.allPlayersContainer.add(playerPiece);
             this.allPlayerInfoText.add(playerInfoText);
         }
-
     }
 
     update() {
@@ -64,11 +63,11 @@ class scene2 extends Phaser.Scene {
         }
 
         // if it is your turn, show the text saying to roll a die
-        this.yourTurnText.visible = this.turn;
+        this.yourTurnText.visible = (userID === this.turn);
 
-        // temp setting to show if it is your turn
-        this.turnDisplay.setText(this.turn.toString());
-        this.userPieceCardLocationDisplay.setText("" + this.userPieceCardLocation);
+        // temp setting to show who's turn it is and what card you're currently on
+        this.turnDisplay.setText(this.turn);
+        this.userPieceCardLocationDisplay.setText("" + players[userID].location);
 
         // left and right movement scrolling
         if (this.keyboard.LEFT.isDown && this.allCardsContainer.x <= 0) {
@@ -79,31 +78,25 @@ class scene2 extends Phaser.Scene {
             this.boardOffset -= 10;
             this.allCardsContainer.x -= 10;
         }
-        if (this.keyboard.UP.isDown && this.userPieceCardLocation < cardCount + 2 && !this.turn) {
-            this.userPieceCardLocation++;
-        }
-        if (this.keyboard.DOWN.isDown && this.userPieceCardLocation > 0 && !this.turn) {
-            this.userPieceCardLocation--;
-        }
 
-        // temporary setting to your turn by pressing T
+        // temporary setting to your turn by pressing T, DELETE AFTER
         if (this.keyboard.T.isDown) {
-            this.turn = true;
+            this.turn = userID;
         }
 
         // Press space on your turn to roll die and move forward
-        if (this.keyboard.SPACE.isDown && this.turn) {
-            this.turn = false;
+        if (this.keyboard.SPACE.isDown && (this.turn === userID)) {
+            this.turn += 1;
             var dieValue = this.rollDie();
-            if (this.userPieceCardLocation + dieValue >= 100) {
-                this.userPieceCardLocation = 100;
+            if (players[userID].location + dieValue >= 100) { // ADD END OF GAME EMIT HERE
+                players[userID].location = 100;
             } else {
-                this.userPieceCardLocation += dieValue;
+                players[userID].location += dieValue;
             }
-            this.landedCardIndex = this.getLandedCardIndex();
-            this.cards[this.userPieceCardLocation].landed = true;
-            //this.moveUserPiece(this.userPiece, dieValue, this.userPieceCardLocation);
-            this.displayLandedCard();
+            this.landedCardIndex = this.getLandedCardIndex(players[userID].location);
+            this.cards[players[userID].location].landed = true;
+            //this.moveUserPiece(this.userPiece, dieValue, players[userID].location);
+            this.displayLandedCard(this.landedCardIndex);
             this.hideDisplayCardEvent = this.time.addEvent({ delay: 3000, callback: this.hideDisplayCard, callbackScope: this });
         }
     }
@@ -169,9 +162,9 @@ class scene2 extends Phaser.Scene {
         return allCards;
     }
 
-    // displays the card the player landed on
-    displayLandedCard() {
-        let card = this.allCardsContainer.getAt(this.landedCardIndex);
+    // displays the card at inputted index
+    displayLandedCard(index) {
+        let card = this.allCardsContainer.getAt(index);
         card.setX(800 + this.boardOffset);
         card.setY(450);
         card.setScale(1);
@@ -187,9 +180,9 @@ class scene2 extends Phaser.Scene {
     }
 
     // returns the container index of the landed card
-    getLandedCardIndex() {
+    getLandedCardIndex(cardLocation) {
         let counter = 1;
-        for (let i = 1; i < this.userPieceCardLocation; i++) {
+        for (let i = 1; i < cardLocation; i++) {
             if (!this.cards[i].landed) {
                 counter++;
             }
