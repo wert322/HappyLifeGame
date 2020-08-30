@@ -58,8 +58,7 @@ class scene2 extends Phaser.Scene {
     update() {
         // update all player locations
         for (let i = 0; i < players.length; i++) {
-            let player = this.allPlayersContainer.getAt(i);
-            player.setPosition(this.cardList[players[i].location].xpos + this.boardOffset, this.cardList[players[i].location].ypos);
+            this.allPlayersContainer.getAt(i).setPosition(this.cardList[players[i].location].xpos + this.boardOffset, this.cardList[players[i].location].ypos);
         }
 
         // if it is your turn, show the text saying to roll a die
@@ -90,14 +89,14 @@ class scene2 extends Phaser.Scene {
             var dieValue = this.rollDie();
             if (players[userID].location + dieValue >= 100) { // ADD END OF GAME EMIT HERE
                 players[userID].location = 100;
-            } else {
+            } else { // game has not ended yet
                 players[userID].location += dieValue;
+                this.landedCardIndex = this.getLandedCardIndex(players[userID].location);
+                this.cards[players[userID].location].landed = true;
+                //this.moveUserPiece(this.userPiece, dieValue, players[userID].location);
+                this.displayLandedCard(this.landedCardIndex);
+                this.hideDisplayCardEvent = this.time.addEvent({ delay: 3000, callback: this.hideDisplayCard, callbackScope: this });
             }
-            this.landedCardIndex = this.getLandedCardIndex(players[userID].location);
-            this.cards[players[userID].location].landed = true;
-            //this.moveUserPiece(this.userPiece, dieValue, players[userID].location);
-            this.displayLandedCard(this.landedCardIndex);
-            this.hideDisplayCardEvent = this.time.addEvent({ delay: 3000, callback: this.hideDisplayCard, callbackScope: this });
         }
     }
     
@@ -165,7 +164,7 @@ class scene2 extends Phaser.Scene {
     // displays the card at inputted index
     displayLandedCard(index) {
         let card = this.allCardsContainer.getAt(index);
-        card.setX(800 + this.boardOffset);
+        card.setX(800 - this.boardOffset);
         card.setY(450);
         card.setScale(1);
         card.setAngle(0);
