@@ -1,4 +1,9 @@
-const cardCount = 99;
+const cardCount = 99; // number of cards excluding start/goal
+const players = []; // stores player info
+const userID = -1; // user ID
+const { username, room } = Qs.parse(location.search, { // username and room
+    ignoreQueryPrefix: true
+});
 
 const config = {
     type: Phaser.AUTO,

@@ -36,7 +36,7 @@ io.on('connection', socket => {
         socket.emit('joinTestResponse', isFull);
     });
 
-    socket.on('joinRoom', ({ username, room}) => {
+    socket.on('joinRoom', ({username, room}) => {
         var tempUsers = getRoomUsers(room);
         var doesContain = false;
         for (i = 0; i < tempUsers.length; i++) {

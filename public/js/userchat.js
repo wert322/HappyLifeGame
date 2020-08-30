@@ -7,14 +7,9 @@ const toggleButton = document.getElementById('readyGameButton');
 const socket = io();
 
 // Get username and room from URL
-var { username, room, customroom } = Qs.parse(location.search, {
+var { username, room } = Qs.parse(location.search, {
     ignoreQueryPrefix: true
 });
-
-// Check if it's a custom room and if so, update room
-if (room === "custom") {
-    room = customroom;
-}
 
 // Emits event to check if the room is full
 socket.emit('joinTest', {room});

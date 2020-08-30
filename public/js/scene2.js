@@ -22,7 +22,7 @@ class scene2 extends Phaser.Scene {
         // Set up cards
         this.cardList = this.setupCards();
         this.cards = this.setupBoard();
-        this.allCardsGroup = this.add.container(0, 0, this.cards);
+        this.allCardsContainer = this.add.container(0, 0, this.cards);
 
         // Keyboard inputs
         this.keyboard = this.input.keyboard.addKeys("LEFT,RIGHT,UP,DOWN,SPACE,T,Y");
@@ -43,23 +43,40 @@ class scene2 extends Phaser.Scene {
         this.yourTurnText = this.add.text(config.scale.width/2, 900, "Your turn! Press SPACE to roll the die.", {font: "40px arial"}).setOrigin(0.5,1);
         this.dieRollResult = this.add.text(config.scale.width/2, 900, "", {font: "40px arial"}).setOrigin(0.5,1);
 
-        // Add user piece to board
-        this.userPiece = this.add.rectangle(0, 0, 50, 50, "0xffaaaa");
+        // Add user piece to board in a player container
+        this.allPlayersContainer = this.add.container(0, 0);
+        this.allPlayerInfoText = this.add.container(0, 0);
+        for (let i = 0; i < players.length; i++) {
+            let playerPiece = this.add.rectangle(0, 0, 50, 50, players[i].playerColor);
+            this.allPlayersContainer.add(playerPiece);
+            let playerInfoText = this.add.text(1250, 10 + 50 * i, players[i].name, {font: "30px arial", color: players[i].playerColor}).setOrigin(0,0)
+            this.allPlayerInfoText.add(playerInfoText);
+        }
 
     }
 
     update() {
-        this.userPiece.setPosition(this.cardList[this.userPieceCardLocation].xpos + this.boardOffset, this.cardList[this.userPieceCardLocation].ypos);
+        // update all player locations
+        for (let i = 0; i < players.length; i++) {
+            let player = this.allPlayersContainer.getAt(i);
+            player.setPosition(this.cardList[players[i].location].xpos + this.boardOffset, this.cardList[players[i].location].ypos);
+        }
+
+        // if it is your turn, show the text saying to roll a die
         this.yourTurnText.visible = this.turn;
+
+        // temp setting to show if it is your turn
         this.turnDisplay.setText(this.turn.toString());
         this.userPieceCardLocationDisplay.setText("" + this.userPieceCardLocation);
-        if (this.keyboard.LEFT.isDown && this.allCardsGroup.x <= 0) {
+
+        // left and right movement scrolling
+        if (this.keyboard.LEFT.isDown && this.allCardsContainer.x <= 0) {
             this.boardOffset += 10;
-            this.allCardsGroup.x += 10;
+            this.allCardsContainer.x += 10;
         }
-        if (this.keyboard.RIGHT.isDown && this.allCardsGroup.x >= -3900) {
+        if (this.keyboard.RIGHT.isDown && this.allCardsContainer.x >= -3900) {
             this.boardOffset -= 10;
-            this.allCardsGroup.x -= 10;
+            this.allCardsContainer.x -= 10;
         }
         if (this.keyboard.UP.isDown && this.userPieceCardLocation < cardCount + 2 && !this.turn) {
             this.userPieceCardLocation++;
@@ -67,9 +84,13 @@ class scene2 extends Phaser.Scene {
         if (this.keyboard.DOWN.isDown && this.userPieceCardLocation > 0 && !this.turn) {
             this.userPieceCardLocation--;
         }
+
+        // temporary setting to your turn by pressing T
         if (this.keyboard.T.isDown) {
             this.turn = true;
         }
+
+        // Press space on your turn to roll die and move forward
         if (this.keyboard.SPACE.isDown && this.turn) {
             this.turn = false;
             var dieValue = this.rollDie();
@@ -149,18 +170,18 @@ class scene2 extends Phaser.Scene {
 
     // displays the card the player landed on
     displayLandedCard() {
-        let card = this.allCardsGroup.getAt(this.landedCardIndex);
+        let card = this.allCardsContainer.getAt(this.landedCardIndex);
         card.setX(800 + this.boardOffset);
         card.setY(450);
         card.setScale(1);
         card.setAngle(0);
-        this.allCardsGroup.bringToTop(card);
+        this.allCardsContainer.bringToTop(card);
         this.displayingCard = true;
     }
 
     // hides the card the player landed on
     hideDisplayCard() {
-        this.allCardsGroup.last.destroy();
+        this.allCardsContainer.last.destroy();
         this.displayingCard = false;
     }
 
