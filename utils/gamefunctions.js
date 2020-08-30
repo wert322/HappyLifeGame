@@ -42,7 +42,7 @@ function removeUser(socket, client) {
 // Takes the type of card and age zone, does the proper updates to the user's data, and emits the proper information to display the card
 function pullCard(cardtype, age, client, socket, io) {
     if (cardtype === 'good') {
-        let tempArray = getCardSet(temp, socket, client, 'remainder');
+        let tempArray = getCardSet(socket, client, 'remainder');
         const text = 'SELECT * FROM good WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
         const values = [age, tempArray];
         client.query(text, values, (err, res) => {
@@ -72,7 +72,7 @@ function pullCard(cardtype, age, client, socket, io) {
             }
         })
     } else if (cardtype === 'bad') {
-        let tempArray = getCardSet(temp, socket, client, 'remainder');
+        let tempArray = getCardSet(socket, client, 'remainder');
         const text = 'SELECT * FROM bad WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
         const values = [age, tempArray];
         client.query(text, values, (err, res) => {
@@ -89,7 +89,7 @@ function pullCard(cardtype, age, client, socket, io) {
                         giveTrait(tempRow, socket, io, client);
                     }
                     if (tempRow.loseturn) {
-                        loseTurn(tempRow, socket, io, client);
+                        loseTurn(socket, io, client);
                     }
                     if (tempRow.money) {
                         moneyUpdate(tempRow,'bad', socket, io, client);
@@ -104,16 +104,18 @@ function pullCard(cardtype, age, client, socket, io) {
             }
         });
     } else {
-        if (age = 'Child') {
-            let tempArray = getCardSet(temp, socket, client, 'remainder');
-            const text = 'SELECT * FROM events WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
-            const values = [age, tempArray];
-            client.query(text, values, (err, res) => {
-        
-            });
-        } else {
+        let tempArray = getCardSet(socket, client, 'remainder');
+        const text = 'SELECT * FROM events WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
+        const values = [age, tempArray];
+        client.query(text, values, (err, res) => {
+            if (err) {
+                console.log(err);
+            } else {
+                var tempRow = res.rows[0];
+                standardEvent(tempRow, socket, client, io);
 
-        }
+            }
+        });
     }
 }
 
@@ -171,7 +173,7 @@ function moneyUpdate(tempRow, type, socket, io, client) {
         updateBalance(client, socket, tempValue, io);
         io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon});
     } else if (type === 'bad') {
-        tempCoefficient = getCoefficient(client, 'earning', socket.id);
+        tempCoefficient = getCoefficient(client, 'penalty', socket.id);
         if (tempRow.percent) {
             tempValue = 1 - tempValue;
             tempValue *= tempCoefficient;
@@ -183,9 +185,17 @@ function moneyUpdate(tempRow, type, socket, io, client) {
         tempValue *= -1;
         updateBalance(client, socket, tempValue, io);
         io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon});
-    } else {
+    } else if (type === 'choice') {
+        if (value < 0) {
+            tempCoefficient = getCoefficient(client, 'penalty', socket.id);
+        } else {
+            tempCoefficient = getCoefficient(client, 'earning', socket.id);
+        }
+        tempValue *= tempCoefficient;
+        updateBalance(client, socket, tempValue, io);
         // For events: MORE COMPLEX
-    }
+    } 
+    // FOR NON STANDARD CHOICES
 }
 
 // Used for good mobility cards, which add a few extra spaces to the next turn
@@ -338,7 +348,7 @@ function kidnapping(tempRow, socket, client, io) {
     var changePhrase = 'You rolled a ' + result;
     if (result < 5 || result > 9) {
         changePhrase = changePhrase + '. Unfortunately you are kidnapped and you lose your next turn.';
-        loseTurn(tempRow, socket, client, io);
+        loseTurn(socket, client, io);
     } else {
         var tempValue = tempRow.value;
         var tempCoefficient = getCoefficient(client, 'penalty', socket.id);
@@ -351,14 +361,14 @@ function kidnapping(tempRow, socket, client, io) {
 }
 
 // Emits event that the player should lose their next turn. Currently just emits hardcoded 1 turn, but can be changed to be dynamic
-function loseTurn(tempRow, socket, client, io) {
+function loseTurn(socket, client, io) {
     socket.emit('loseNextTurn', {turns: 1});
 }
 
 // Adds the passed in card ID to the matching set, so that it is essentially discarded
 function discardCard(tempRow, socket, client, setType) {
     var tempRoom = getCurrentUser(socket.id).room;
-    var tempArray = getCardSet(tempRow, socket, client, setType);
+    var tempArray = getCardSet(socket, client, setType);
     tempArray.push(tempRow.id);
     const text = 'UPDATE cardsets SET $1 WHERE roomname = $2';
     const values = [tempArray, tempRoom];
@@ -367,7 +377,7 @@ function discardCard(tempRow, socket, client, setType) {
         .catch(e => console.error(e.stack));
 }
 
-function getCardSet(tempRow, socket, client, setType) {
+function getCardSet(socket, client, setType) {
     var tempRoom = getCurrentUser(socket.id).room;
     const text = 'SELECT $1 FROM cardsets WHERE roomname = $2 LIMIT 1';
     const values = [setType, tempRoom];
@@ -375,6 +385,48 @@ function getCardSet(tempRow, socket, client, setType) {
         .query(text, values)
         .then(res => {
             return res.rows[0].setType;
+        })
+        .catch(e => console.error(e.stack));
+}
+
+function standardEvent(tempRow, socket, client, io) {
+    if (tempRow.choice1text != null) {
+        let tempArray = [tempRow.choice1text, tempRow.choice1, tempRow.choice2text, tempRow.choice2]
+        socket.emit('twoChoiceEvent', {tempArray});
+        socket.on('twoChoiceResponse', ({choiceID}) => {
+            choicesUpdate(socket, client, io, choiceID, 'standard');
+        })
+    }
+}
+
+function choicesUpdate(socket, client, io, choiceID, choiceType) {
+    if (choiceType === 'standard') {
+        var tempArray = getTraits(client, socket.id);
+        var tempChoice = getChoiceDetails(client, choiceID);
+        if (!tempChoice.effectless) {
+            if (tempChoice.factoringid != 'null' && tempArray.includes(tempChoice.factoringid)) {
+                choiceID = tempChoice.redirectid;
+                tempChoice = getChoiceDetails(client, choiceID);
+            }
+            if (tempChoice.money) {
+                moneyUpdate(tempChoice, 'choice', socket, io, client);
+            }
+            if (tempChoice.turnchange) {
+                loseTurn(socket, io, client);
+            }
+        }
+        io.to(tempUser.room).emit('showRegularChoice', {tempDescription})
+    }
+}
+
+// Takes the ID of the choice and returns the corresponding row as an object
+function getChoiceDetails(client, choiceID) {
+    const text = 'SELECT * FROM eventchoices WHERE id = $1';
+    const values = [choiceID];
+    client
+        .query(text, values)
+        .then (res => {
+            return res.rows[0];
         })
         .catch(e => console.error(e.stack));
 }
