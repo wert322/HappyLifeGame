@@ -40,6 +40,7 @@ function removeUser(socket, client) {
 
 // Takes the type of card and age zone, does the proper updates to the user's data, and emits the proper information to display the card
 function pullCard(cardtype, age, client, socket, io) {
+    var marriedStatus = getPartner(socket, client, io);
     if (cardtype === 'good') {
         let tempArray = getCardSet(socket, client, 'remainder');
         const text = 'SELECT * FROM good WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
@@ -56,7 +57,10 @@ function pullCard(cardtype, age, client, socket, io) {
                         goodMobility(tempRow, socket, io);
                     }
                     if (tempRow.traitcard === 1) {
-                        giveTrait(tempRow, socket, io, client);
+                        giveTrait(tempRow.trait, socket.id, io, client);
+                        if (marriedStatus !== null) {
+                            giveTrait(tempRow.trait, marriedStatus, io, client);
+                        }
                     }
                     if (tempRow.money) {
                         moneyUpdate(tempRow,'good', socket, io, client);
@@ -81,12 +85,15 @@ function pullCard(cardtype, age, client, socket, io) {
             } else {
                 var tempRow = res.rows[0];
                 if (tempRow.id === 'BC1' || tempRow.id === 'BA5') {
-                    suddenDeath(tempRow, socket, client, io);
+                    suddenDeath(tempRow, socket, client, io, socket.id);
                 } else if (tempRow.id === 'BC5'){
                     kidnapping(tempRow, socket, client, io);
                 } else {
                     if (tempRow.traitcard) {
-                        giveTrait(tempRow, socket, io, client);
+                        giveTrait(tempRow.trait, socket.id, io, client);
+                        if (marriedStatus !== null) {
+                            giveTrait(tempRow.trait, marriedStatus, io, client);
+                        }
                     }
                     if (tempRow.loseturn) {
                         loseTurn(socket, io, client);
@@ -105,15 +112,17 @@ function pullCard(cardtype, age, client, socket, io) {
             }
         });
     } else {
-        let marriedStatus = getPartner(socket, client, io);
         let marriedCount = getMarriedCount(socket, client);
         let totalCount = getRoomUsers(getCurrentUser(socket.id).room).length;
         let tempArray1 = getCardSet(socket, client, 'remainder');
         let tempArray2 = getCardSet(socket, client,'eventadult');
         let tempArray3 = getCardSet(socket, client, 'eventold');
         let tempArray = tempArray1;
-        if (marriedStatus == null && totalCount - marriedCount > 1) {
+        if (marriedStatus === null) {
             tempArray.concat(['EA1', 'EA2', 'EO1', 'EO2']);
+            if (totalCount - marriedCount < 2) {
+                tempArray.concat(['EA3', 'EO3']);
+            }
         } else {
             tempArray.concat(['EA3', 'EO3']);
         }
@@ -141,36 +150,97 @@ function pullCard(cardtype, age, client, socket, io) {
 function doubleTraits(tempRow, socket, io, client) {
     let result = Math.floor(Math.random() * 6 + 1);
     let cardChoice;
-    var tempArray = getTraits(client, socket.id);
+    let tempUser = getCurrentUser(socket.id);
+    let tempDescription = tempRow.description;
+    let tempIcon = tempRow.icon;
+    let tempUsername = tempUser.username;
     var changePhrase;
     if (result < 4) {
         cardChoice = 'T3';
-        tempArray.push('T3');
         changePhrase = 'You rolled a ' + result + ', giving you honmmei chocos and the romantic trait as a result!'
     } else {
         cardChoice = 'T4';
-        tempArray.push('T4');
         changePhrase = 'You rolled a ' + result + ', giving you giri chocos and the romantic trait as a result!'
     }
-    updateTraits(tempArray, client, socket.id, cardChoice);
-    var tempUser = getCurrentUser(socket.id);
-    var tempDescription = tempRow.description;
-    var tempIcon = tempRow.icon;
-    let tempUsername = tempUser.username;
+
     io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, changePhrase, tempUsername});
+    giveTrait(cardChoice, socket.id, io, client);
+    if (getPartner(socket, client, io) !== null) {
+        let partnerID = getPartner(socket, client, io);
+        giveTrait(cardChoice, partnerID, io, client);
+    }
 }
 
 // Used to give trait cards, used for all types
-function giveTrait(tempRow, socket, io, client) {
-    let tempArray = getTraits(client, socket.id);
-    let traitID = tempRow.trait;
-    if (!tempTraits.includes(traitID)) {
+function giveTrait(traitID, id, io, client) {
+    let tempArray = getTraits(client, id);
+    if (!tempArray.includes(traitID)) {
         tempArray.push(tempID);
-        updateTraits(tempArray, client, socket.id, traitID);
+        updateTraits(tempArray, client, id, traitID);
         // Maybe emit event to indicate that the db has been updated 
     } else {
         // Maybe emit a custom event for when they already have the trait card: TBD, confer with Brandon
     }
+}
+
+// Updates the users db to hold the users new traits list. Also updates his coefficients. Does not do anything to the marriage card except add it to the array
+function updateTraits(tempArray, client, id, trait) {
+    const text = 'UPDATE users SET traits = $1 WHERE id = $2';
+    const values = [tempArray, id];
+    client
+        .query(text, values)
+        .catch (e => console.error(e.stack));
+    var tempRow = getTraitDetails(client, trait);
+    var tempValue = 1;
+    if (tempRow.receiving) {
+        tempValue = tempRow.receivingc * getCoefficient(client, 'receiving', id);
+        updateCoefficient(client,'receiving',id,tempValue);
+        tempValue = 1;
+    }
+    if (tempRow.giving) {
+        tempValue = tempRow.givingc * getCoefficient(client, 'giving', id);
+        updateCoefficient(client,'giving',id,tempValue);
+        tempValue = 1;
+    }
+    if (tempRow.earning) {
+        tempValue = tempRow.earningc * getCoefficient(client, 'earning', id);
+        updateCoefficient(client,'earning',id,tempValue);
+        tempValue = 1;
+    }
+    if (tempRow.penalty) {
+        tempValue = tempRow.penaltyc * getCoefficient(client, 'penalty', id);
+        updateCoefficient(client,'penalty',id,tempValue);
+        tempValue = 1;
+    }
+    if (tempRow.college) {
+        tempValue = tempRow.collegec * getCoefficient(client, 'college', id);
+        updateCoefficient(client,'college',id,tempValue);
+        tempValue = 1;
+    }
+}
+
+// Pulls and returns the array of traits for the user
+function getTraits(client, id) {
+    const text = 'SELECT traits FROM users WHERE id = $1 LIMIT 1';
+    const values = [id];
+    client
+        .query(text, values)
+        .then(res => {
+            return res.rows[0].id;
+        })
+        .catch (e => console.error(e.stack));
+}
+
+// Returns as a keyed object, the row that contains the details of the specified trait
+function getTraitDetails(client, trait) {
+    const text = 'SELECT * FROM traits WHERE id = $1 LIMIT 1';
+    const values = [trait];
+    client
+        .query(text, values)
+        .then(res => {
+            return res.rows[0];
+        })
+        .catch (e => console.error(e.stack));
 }
 
 // Used to update the money of cards, used for all types. Can take in good dice roll cards. Adds in the coefficient 
@@ -219,23 +289,24 @@ function moneyUpdate(tempRow, type, socket, io, client) {
     // FOR NON STANDARD CHOICES
 }
 
-// Used for good mobility cards, which add a few extra spaces to the next turn
-function goodMobility(tempRow, socket, io) {
-    var tempSquares = tempRow.squares;
-    socket.emit('addSpacesNext', {tempSquares});
-}
-
 // Takes the player and the value of the sum to be added or subtracted, and updates the DB accordingly
 function updateBalance(client, socket, id, sumvalue, io) {
-    let tempID = id;
-    let tempBalance = getBalance(client, tempID);
+    let tempBalance = getBalance(client, id);
+    let partnerID = getPartner(socket, client, io);
     tempBalance += sumvalue;
-    const text = 'UPDATE users SET balance = $1 WHERE id = $2';
-    const value = [tempBalance, tempID];
+    let text = 'UPDATE users SET balance = $1 WHERE id = $2';
+    let values = [tempBalance, id];
     client
         .query(text, values)
         .catch (e => console.error(e.stack));
     // Possibly emit an event
+    if (partnerID !== null) {
+        values = [tempBalance, partnerID];
+        client
+            .query(text, values)
+            .catch (e => console.error(e.stack));
+        // Possibly emit an event
+    }
 }
 
 // Takes the player's id and returns their current balance
@@ -246,30 +317,6 @@ function getBalance(client, id) {
         .query(text, values)
         .then(res => {
             return res.rows[0].balance;
-        })
-        .catch (e => console.error(e.stack));
-}
-
-// Pulls and returns the array of traits for the user
-function getTraits(client, id) {
-    const text = 'SELECT traits FROM users WHERE id = $1 LIMIT 1';
-    const values = [id];
-    client
-        .query(text, values)
-        .then(res => {
-            return res.rows[0].id;
-        })
-        .catch (e => console.error(e.stack));
-}
-
-// Returns as a keyed object, the row that contains the details of the specified trait
-function getTraitDetails(client, trait) {
-    const text = 'SELECT * FROM traits WHERE id = $1 LIMIT 1';
-    const values = [trait];
-    client
-        .query(text, values)
-        .then(res => {
-            return res.rows[0];
         })
         .catch (e => console.error(e.stack));
 }
@@ -295,47 +342,22 @@ function updateCoefficient(client, header, id, value) {
         .catch(e => console.error(e.stack));
 }
 
-// Updates the users db to hold the users new traits list. Also updates his coefficients. Does not do anything to the marriage card except add it to the array
-function updateTraits(tempArray, client, id, trait) {
-    const text = 'UPDATE users SET traits = $1 WHERE id = $2';
-    const values = [tempArray, id];
-    client
-        .query(text, values)
-        .catch (e => console.error(e.stack));
-    var tempRow = getTraitDetails(client, trait);
-    var tempValue = 1;
-    if (tempRow.receiving) {
-        tempValue = tempRow.receivingc * getCoefficient(client,'receiving', id);
-        updateCoefficient(client,'receiving',id,tempValue);
-        tempValue = 1;
-    }
-    if (tempRow.giving) {
-        tempValue = tempRow.givingc * getCoefficient(client,'giving', id);
-        updateCoefficient(client,'giving',id,tempValue);
-        tempValue = 1;
-    }
-    if (tempRow.earning) {
-        tempValue = tempRow.earningc * getCoefficient(client,'earning', id);
-        updateCoefficient(client,'earning',id,tempValue);
-        tempValue = 1;
-    }
-    if (tempRow.penalty) {
-        tempValue = tempRow.penaltyc * getCoefficient(client,'penalty', id);
-        updateCoefficient(client,'penalty',id,tempValue);
-        tempValue = 1;
-    }
-    if (tempRow.college) {
-        tempValue = tempRow.collegec * getCoefficient(client,'college', id);
-        updateCoefficient(client,'college',id,tempValue);
-        tempValue = 1;
+// Used for good mobility cards, which add a few extra spaces to the next turn
+function goodMobility(tempRow, socket, io) {
+    let partnerID = getPartner(socket, client, io);
+    var tempSquares = tempRow.squares;
+    socket.emit('addSpacesNext', {tempSquares});
+    if (partnerID !== null) {
+        socket.to(partnerID).emit('addSpacesNext', {tempSquares});
     }
 }
 
 // Takes the player and for either of the sudden death events (BC1 and BC5), rolls the dice and accordingly penalizes the player or kills them
-function suddenDeath(tempRow, socket, client, io) {
+function suddenDeath(tempRow, socket, client, io, id) {
+    var partnerID = getPartner(socket, client, io);
     var tempDescription = tempRow.description;
     var tempIcon = tempRow.icon;
-    var tempUser = getCurrentUser(socket.id);
+    var tempUser = getCurrentUser(id);
     let tempUsername = tempUser.username;
     var result = Math.floor(Math.random() * 6 + 1);
     var result2 = Math.floor(Math.random() * 6 + 1);
@@ -343,19 +365,27 @@ function suddenDeath(tempRow, socket, client, io) {
     var customPhrase = 'You rolled a ' + result2;
     if (result === 1 || result === 36) {
         const text = 'UPDATE users SET alive = $1 WHERE id = $2';
-        const values = [false, socket.id];
+        let values = [false, id];
         client
             .query(text, values)
             .catch(e => console.error(e.stack));
         customPhrase = customPhrase + ' and as a result, you have died. Better luck next time!';
+        if (partnerID !== null) {
+            values = [false, partnerID];
+            client
+                .query(text, values)
+                .catch(e=> console.error(e.stack));
+        // Emit event probably
+        }
     } else {
         var tempValue = tempRow.value;
-        var tempCoefficient = getCoefficient(client, 'penalty', socket.id);
+        var tempCoefficient = getCoefficient(client, 'penalty', id);
         tempValue *= tempCoefficient;
         customPhrase = customPhrase + '. You survive, but you pay ' + tempValue + ' million yen in medical fees.';
         tempValue *= -1;
-        updateBalance(client, socket, socket.id, tempValue, io);
+        updateBalance(client, socket, id, tempValue, io);
     }
+    // Emit event probably
     io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, customPhrase, tempUsername});
 }
 
@@ -380,12 +410,17 @@ function kidnapping(tempRow, socket, client, io) {
         tempValue *= -1;
         updateBalance(client, socket, socket.id, tempValue, io);
     }
+    // Emit event possibly
     io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, changePhrase, tempUsername});
 }
 
 // Emits event that the player should lose their next turn. Currently just emits hardcoded 1 turn, but can be changed to be dynamic
 function loseTurn(socket, client, io) {
+    let partnerID = getPartner(socket, client, io);
     socket.emit('loseNextTurn', {turns: 1});
+    if (partnerID !== null) {
+        socket.to(partnerID).emit('lostNextTurn', {turns: 1});
+    }
 }
 
 // Adds the passed in card ID to the matching set, so that it is essentially discarded
@@ -467,6 +502,7 @@ function standardEvent(tempRow, socket, client, io, age) {
 // Takes in the given choice by ID and operates it based on the specific type
 function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
     var tempUser = getCurrentUser(socket.id);
+    let marriedStatus = getPartner(socket, client, io);
     let tempUsername = tempUser.username;
     if (choiceType === 'standard') {
         var tempArray = getTraits(client, socket.id);
@@ -483,7 +519,10 @@ function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
                 loseTurn(socket, io, client);
             }
             if (tempChoice.hastrait) {
-                giveTrait(tempChoice, socket, io, client);
+                giveTrait(tempChoice.trait, socket.id, io, client);
+                if (marriedStatus !== null) {
+                    giveTrait(tempChoice.trait, marriedStatus, io, client);
+                }
             }
         }
         let tempDescription = tempChoice.description;
@@ -514,6 +553,7 @@ function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
             updateBalance(client, socket, socket.id, userC, io);
             updateBalance(client, socket, partnerID, partnerC, io);
         }
+        // Emit event probably
     } else if (choiceType === 'marriage') {
         let tempArray = getRoomUsers(tempUser.room);
         let userC;
