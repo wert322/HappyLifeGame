@@ -1,6 +1,4 @@
 const { userJoin, getCurrentUser, userLeave, getRoomUsers } = require('./users');
-const { restart } = require('nodemon');
-const { text } = require('express');
 const e = require('express');
 
 // Creates the array that holds the pulled cards for each room
@@ -417,7 +415,7 @@ function getCardSet(socket, client, setType) {
 
 //  Takes the specified event and obtains the user's response before then operating on it. Also takes into account special situations and passes the corresponding type to helper methods
 function standardEvent(tempRow, socket, client, io, age) {
-    if (tempRow.choice1text != null && tempRow.id != 'EA6' && tempRow.id != 'EO5') {
+    if (tempRow.choice1text !== null && tempRow.id !== 'EA6' && tempRow.id !== 'EO5') {
         let tempArray = [tempRow.choice1text, tempRow.choice1, tempRow.choice2text, tempRow.choice2];
         let setType;
         socket.emit('twoChoiceEvent', {tempArray});
@@ -474,7 +472,7 @@ function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
         var tempArray = getTraits(client, socket.id);
         var tempChoice = getChoiceDetails(client, choiceID);
         if (!tempChoice.effectless) {
-            if (tempChoice.factoringid != 'null' && tempArray.includes(tempChoice.factoringid)) {
+            if (tempChoice.factoringid !== 'null' && tempArray.includes(tempChoice.factoringid)) {
                 choiceID = tempChoice.redirectid;
                 tempChoice = getChoiceDetails(client, choiceID);
             }
@@ -519,7 +517,7 @@ function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
     } else if (choiceType === 'marriage') {
         let tempArray = getRoomUsers(tempUser.room);
         let userC;
-        let partnerC;
+        let partnerC; 
         let thirdC;
         tempArray.forEach(element => {
             if (element.id !== socket.id && element.id !== input) {
@@ -554,7 +552,7 @@ function divorceCard(tempRow, socket, client, io) {
         .query(text, values)
         .then (res => {
             let tempMarriage = res.row[0];
-            if (tempMarriage.married != null) {
+            if (tempMarriage.married !== null) {
                 if (tempRow.id === 'EA1') {
                     choicesUpdate(socket, client, io, 'C23', 'divorce', null);
                 } else {
