@@ -262,7 +262,7 @@ function moneyUpdate(tempRow, type, socket, io, client) {
         } else {
             io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon, tempUsername});
         }
-        updateBalance(client, socket, socket.id, tempValue, io);
+        updateBalance(client, socket, socket.id, tempValue, io, false);
     } else if (type === 'bad') {
         tempCoefficient = getCoefficient(client, 'penalty', socket.id);
         if (tempRow.percent) {
@@ -274,7 +274,7 @@ function moneyUpdate(tempRow, type, socket, io, client) {
             tempValue *= tempCoefficient;
         }
         tempValue *= -1;
-        updateBalance(client, socket, socket.id, tempValue, io);
+        updateBalance(client, socket, socket.id, tempValue, io, false);
         io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon, tempUsername});
     } else if (type === 'choice') {
         if (value < 0) {
@@ -283,14 +283,14 @@ function moneyUpdate(tempRow, type, socket, io, client) {
             tempCoefficient = getCoefficient(client, 'earning', socket.id);
         }
         tempValue *= tempCoefficient;
-        updateBalance(client, socket, socket.id, tempValue, io);
+        updateBalance(client, socket, socket.id, tempValue, io, false);
         // For events: MORE COMPLEX
     } 
     // FOR NON STANDARD CHOICES
 }
 
 // Takes the player and the value of the sum to be added or subtracted, and updates the DB accordingly
-function updateBalance(client, socket, id, sumvalue, io) {
+function updateBalance(client, socket, id, sumvalue, io, ignore) {
     let tempBalance = getBalance(client, id);
     let partnerID = getPartner(socket, client, io);
     tempBalance += sumvalue;
@@ -300,7 +300,7 @@ function updateBalance(client, socket, id, sumvalue, io) {
         .query(text, values)
         .catch (e => console.error(e.stack));
     // Possibly emit an event
-    if (partnerID !== null) {
+    if (partnerID !== null && !ignore) {
         values = [tempBalance, partnerID];
         client
             .query(text, values)
@@ -383,7 +383,7 @@ function suddenDeath(tempRow, socket, client, io, id) {
         tempValue *= tempCoefficient;
         customPhrase = customPhrase + '. You survive, but you pay ' + tempValue + ' million yen in medical fees.';
         tempValue *= -1;
-        updateBalance(client, socket, id, tempValue, io);
+        updateBalance(client, socket, id, tempValue, io, false);
     }
     // Emit event probably
     io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, customPhrase, tempUsername});
@@ -408,7 +408,7 @@ function kidnapping(tempRow, socket, client, io) {
         tempValue *= tempCoefficient;
         changePhrase = changePhrase + '. You pay a ransom of ' + tempValue + ' million yen to be set free.';
         tempValue *= -1;
-        updateBalance(client, socket, socket.id, tempValue, io);
+        updateBalance(client, socket, socket.id, tempValue, io, false);
     }
     // Emit event possibly
     io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, changePhrase, tempUsername});
@@ -450,6 +450,7 @@ function getCardSet(socket, client, setType) {
 
 //  Takes the specified event and obtains the user's response before then operating on it. Also takes into account special situations and passes the corresponding type to helper methods
 function standardEvent(tempRow, socket, client, io, age) {
+    var partnerID = getPartner(socket, client, io);
     if (tempRow.choice1text !== null && tempRow.id !== 'EA6' && tempRow.id !== 'EO5') {
         let tempArray = [tempRow.choice1text, tempRow.choice1, tempRow.choice2text, tempRow.choice2];
         let setType;
@@ -484,34 +485,50 @@ function standardEvent(tempRow, socket, client, io, age) {
         discardCard(tempRow, socket, client, setType);
     } else if (tempRow.id === 'EA1' || tempRow.id === 'EO1') { //Divorce   
         divorceCard(tempRow, socket, client, io);
-    } else if (tempRow.id === 'EA2' || tempRow.id === 'EO2') { //Married
+    } else if (tempRow.id === 'EA2' || tempRow.id === 'EO2') { //Children
+        childrenCard(tempRow.id, socket, client, io);
+    } else if (tempRow.id === 'EA3' || tempRow.id === 'EO3') { //Married
         marriageCard(tempRow, socket, client, io);
-    } else if (tempRow.id === 'EA3' || tempRow.id === 'EO3') { //Children 
-        childrenCard();
     } else if (tempRow.id === 'EO6') {  //Sell house
-        sellHouseCard();
+        choicesUpdate(socket, client, io, 'C41', 'standard', null);
+        discardCard(tempRow, socket, client, 'eventold');
     } else if (tempRow.id === 'EO7') { //Book club
-        bookClubCard();
+        choicesUpdate(socket, client, io, 'C56', 'bookclub', null);
+        discardCard(tempRow, socket, client, 'eventold');
     } else if (tempRow.id === 'EO10') { //Elected as mayor
-        mayorCard();
+        choicesUpdate(socket, client, io, 'C48', 'standard', null);
+        discardCard(tempRow, socket, client, 'eventold');
     } else { //Become guardian of child
-        guardianCard();
-    }   //discardCard(tempRow, socket, client, setType)
+        updateChildren(socket.id, client, 1);
+        if (partnerID !== null) {
+            updateChildren(partnerID, client, 1);
+        }
+        // Event maybe
+    }   discardCard(tempRow, socket, client, 'eventold')
 }
 
 // Takes in the given choice by ID and operates it based on the specific type
 function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
     var tempUser = getCurrentUser(socket.id);
-    let marriedStatus = getPartner(socket, client, io);
+    var userTraits = getTraits(client, socket.id);
+    var tempChoice = getChoiceDetails(client, choiceID);
+    let partnerID = getPartner(socket, client, io);
     let tempUsername = tempUser.username;
+    let roomUsers = getRoomUsers(tempUser.room);
+    let userC;
+    let partnerC;
+    let thirdC;
     if (choiceType === 'standard') {
-        var tempArray = getTraits(client, socket.id);
-        var tempChoice = getChoiceDetails(client, choiceID);
+        if (tempChoice.factoringid !== 'null' && userTraits.includes(tempChoice.factoringid)) {
+            choiceID = tempChoice.redirectid;
+            tempChoice = getChoiceDetails(client, choiceID);
+        }
         if (!tempChoice.effectless) {
-            if (tempChoice.factoringid !== 'null' && tempArray.includes(tempChoice.factoringid)) {
-                choiceID = tempChoice.redirectid;
-                tempChoice = getChoiceDetails(client, choiceID);
-            }
+            if (choiceID = 'C41') {
+                let result = Math.floor(Math.random() * 6 + 1);
+                tempChoice.value *= result;
+                // Possible event
+            } 
             if (tempChoice.money) {
                 moneyUpdate(tempChoice, 'choice', socket, io, client);
             }
@@ -533,42 +550,62 @@ function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
         if (result % 2 === 1) {
             tempValue *= -1;
         }
-        updateBalance(client, socket, socket.id, tempValue, io);
+        updateBalance(client, socket, socket.id, tempValue, io, false);
         let tempPhrase = 'You rolled a ' + result + '. The result of your investment was a change of ' + tempValue + ' million yen.';
         io.to(tempUser.room).emit('showRegularChoice', {tempPhrase, tempUsername});
     } else if (choiceType === 'divorce') {
-        let partnerID = getPartner(socket, client, io);
         updateMarriage(socket.id, client, io, null);
         updateMarriage(partnerID, client, io, null);
-        let userC = getCoefficient(client, 'receiving', socket.id);
-        let partnerC = getCoefficient(client, 'giving', partnerID);
+        userC = getCoefficient(client, 'receiving', socket.id);
+        partnerC = getCoefficient(client, 'giving', partnerID);
         if (choiceID === 'C23') {
             userC *= 10;
             partnerC *= -10;
-            updateBalance(client, socket, socket.id, userC, io);
-            updateBalance(client, socket, partnerID, partnerC, io);
+            updateBalance(client, socket, socket.id, userC, io, false);
+            updateBalance(client, socket, partnerID, partnerC, io, true);
         } else {
             userC *= 20;
             partnerC *= -20;
-            updateBalance(client, socket, socket.id, userC, io);
-            updateBalance(client, socket, partnerID, partnerC, io);
+            updateBalance(client, socket, socket.id, userC, io, false);
+            updateBalance(client, socket, partnerID, partnerC, io, true);
         }
         // Emit event probably
     } else if (choiceType === 'marriage') {
-        let tempArray = getRoomUsers(tempUser.room);
-        let userC;
-        let partnerC; 
-        let thirdC;
-        tempArray.forEach(element => {
+        userC = getCoefficient(client, 'receiving', socket.id) * 0.05;
+        partnerC = getCoefficient(client, 'receiving', partnerID) * 0.05;
+        roomUsers.forEach(element => {
             if (element.id !== socket.id && element.id !== input) {
-                userC = getCoefficient(client, 'receiving', socket.id) * 0.05;
-                partnerC = getCoefficient(client, 'receiving', socket) * 0.05;
                 thirdC = getCoefficient(client, 'giving', element.id) * -0.05;
-                updateBalance(client, socket, socket.id, userC, io);
-                updateBalance(client, socket, input, partnerC, io);
-                updateBalance(client, socket, element.id, thirdC, io);
+                updateBalance(client, socket, socket.id, userC, io, false);
+                updateBalance(client, socket, input, partnerC, io, true);
+                updateBalance(client, socket, element.id, thirdC, io, true);
             }
         });
+    } else if (choiceType === 'children') {
+        updateChildren(socket.id, client, input);
+        updateChildren(partnerId, client, input);
+        userC = getCoefficient(client, 'receiving', socket.id) * 0.1 * input;
+        partnerC = getCoefficient(client, 'receiving', socket) * 0.1 * input;
+        roomUsers.forEach(element => {
+            if (element.id !== socket.id && element.id !== partnerID) {
+                thirdC = getCoefficient(client, 'giving', element.id) * -0.1;
+                updateBalance(client, socket, socket.id, userC, io, false);
+                updateBalance(client, socket, partnerID, partnerC, io, true);
+                updateBalance(client, socket, element.id, thirdC, io, true);
+            }
+        });
+    }  else if (choiceType === 'bookclub') {
+        // Events in here
+        if (userTraits.includes('T4') && userTraits.includes('T12')) {
+            tempChoice.value = 10;
+        } else if (userTraits.includes('T4')) {
+            tempChoice.value = 20;
+        } else if (userTraits.includes('T12')) {
+            tempChoice.value = 0;
+        } else {
+            tempChoice.value = 10;
+        }
+        moneyUpdate(tempChoice ,'choice', socket, io, client);
     }
 }
 
@@ -646,6 +683,7 @@ function marriageCard(tempRow, socket, client, io) {
                 tempArray2.splice(index, 1);
                 updateTraits(tempArray2, client, pID, 'T2');
             }
+            // Emit event maybe
             choicesUpdate(socket, client, io, 'C50', 'standard', null);
         }
     });
@@ -660,6 +698,55 @@ function getMarriedCount(socket, client) {
         .query(text, values)
         .then (res => {
             return res.row[0].count;
+        })
+        .catch (e => console.error(e.stack));
+}
+
+//  Handles the children event. Rolls the dice and passes on the sum that determines number 
+function childrenCard(eventID, socket, client, io) {
+    let result = Math.floor(Math.random() * 6 + 1) + Math.floor(Math.random() * 6 + 1);
+    let numberChildren;
+    let choice;
+    if (eventID === 'EA2') {
+        if (result === 2 || result === 12) {
+            numberChildren = 3;
+        } else if (result === 3 || result === 4 || result === 10 || result === 11) {
+            numberChildren = 2;
+        } else {
+            numberChildren = 1;
+        }
+        choice = 'C24';
+    } else {
+        if (result === 2 || result === 12) {
+            numberChildren = 2;
+        } else {
+            numberChildren = 1;
+        }
+        choice = 'C55';
+    }
+    choicesUpdate(socket, client, io, choice, 'children', numberChildren);
+}
+
+// Updates the actual DB of the given player (ID) and with the number of new
+function updateChildren(id, client, children) {
+    let currentChildren = getChildren(id, client);
+    children += currentChildren;
+    const text = 'UPDATE users SET children = $1 WHERE id = $2';
+    const values = [children, children];
+    client
+        .query(text, values)
+        .catch (e => console.error(e.stack));
+    // Possibly emit an event
+}
+
+// Gets the number of children for the given player (ID)
+function getChildren(id, client) {
+    const text = 'SELECT children FROM users WHERE id = $1';
+    const values = (id);
+    client
+        .query(text, values)
+        .then(res => {
+            return res.rows[0].children;
         })
         .catch (e => console.error(e.stack));
 }
