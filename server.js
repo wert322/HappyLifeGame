@@ -118,6 +118,14 @@ io.on('connection', socket => {
             io.emit('updateRooms', {filler: true});
         }
     });
+
+    // Listens for game turn
+    socket.on('gameTurn', ({playerID, dieValue, cardType, cardAge}) => {
+        const user = getCurrentUser(socket.id);
+        io.to(user.room).emit('updateOtherGameUsers', {playerID, dieValue});
+        // pullCard(cardType, cardAge, client, socket, io);
+        // emit info to update player money etc
+    });
 });
 
 const port = process.env.PORT || 8000;

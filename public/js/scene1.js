@@ -14,7 +14,7 @@ class scene1 extends Phaser.Scene {
     }
 
     update() {
-        if (this.keyboard.SPACE.isDown) {
+        if (this.keyboard.SPACE.isDown && players.length >= 2) {
             this.scene.start("playGame");
         }
         socket.on('roomUsers', ({ room, users }) => {

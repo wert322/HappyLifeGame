@@ -1,5 +1,6 @@
 const cardCount = 99; // number of cards excluding start/goal
 const players = []; // stores player info
+
 var userID = -1; // user ID
 
 const config = {
