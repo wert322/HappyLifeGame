@@ -4,7 +4,7 @@ const express = require('express');
 const socketio = require('socket.io');
 const formatMessage = require('./utils/messages');
 const { userJoin, getCurrentUser, userLeave, getRoomUsers } = require('./utils/users');
-const { pullCard, createCardSet, deleteCardSet, addUser, removeUser } = require('./utils/gamefunctions');
+const { pullCard, createCardSet, deleteCardSet, addUser, removeUser, college, tabulatePlayers } = require('./utils/gamefunctions');
 
 const app = express();
 const server = http.createServer(app);
@@ -25,6 +25,10 @@ client.connect();
 
 // Run when client connects
 io.on('connection', socket => {
+
+    socket.on('collegeEvent', ({filler}) => {
+        college(client, socket, io);
+    });
 
     socket.on('drawCard', ({cardtype, age}) => {
         pullCard(cardtype, age, client, socket, io);

@@ -566,6 +566,9 @@ function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
         } else {
             userC *= 20;
             partnerC *= -20;
+            let childrenCount = getChildren(partnerID, client);
+            userC *= childrenCount;
+            partnerC *= childrenCount;
             updateBalance(client, socket, socket.id, userC, io, false);
             updateBalance(client, socket, partnerID, partnerC, io, true);
         }
@@ -751,7 +754,49 @@ function getChildren(id, client) {
         .catch (e => console.error(e.stack));
 }
 
-module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser};
+function getAlive(id, client) {
+    const text = 'SELECT * FROM users WHERE id = $1';
+    const values = [id];
+    client
+        .query(text, values)
+        .then(res => {
+            return res.rows[0].alive;
+        })
+        .catch (e => console.error(e.stack));
+}
+
+function college(client, socket, io) {
+    let collegeText = 'You have arrived at adulthood. Would you like to pursue a college education for 10 million yen and a lost turn? You are allowed to go into debt.'
+    socket.emit('collegeResponse', {collegeText});
+    socket.on('collegeChoice', ({choice}) => { //Ideally choice is a boolean
+        if (choice) {
+            choicesUpdate(socket, client, io, 'C30', 'standard', null);
+        } else {
+            // Maybe event an event saying they move on
+        }
+    });
+}
+
+function tabulatePlayers(client, socket, io) {
+    let room = getCurrentUser(socket.id).room;
+    const text = 'SELECT username, (20*children+balance) AS totalBalance FROM users WHERE room=$1 ORDER BY alive DESC, totalBalance DESC;';
+    const values = [room];
+    const usernames = [];
+    const balances = [];
+    client
+        .query(text, values)
+        .then (res => {
+            const data = res.rows;
+            data.forEach (row => {
+                usernames.push(row.username);
+                balances.push(row.totalBalance);
+            })
+        })
+        .catch (e => console.error(e.stack));
+    io.to(room).emit('finalTabulation', {usernames, balances});
+}
+
+module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser, college, tabulatePlayers};
 
 /*     const text = 'SELECT * FROM '
 client.query('SELECT * FROM bad;', (err, res) => {
