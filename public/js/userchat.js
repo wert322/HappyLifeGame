@@ -6,6 +6,9 @@ const toggleButton = document.getElementById('readyGameButton');
 
 const socket = io();
 
+// Used to toggle message background
+var oddNumMessage = true;
+
 // Get username and room from URL
 var { username, room } = Qs.parse(location.search, {
     ignoreQueryPrefix: true
@@ -57,10 +60,15 @@ chatForm.addEventListener('submit', (e) => {
     e.target.elements.msg.focus();
 });
 
-
 // Output message to DOM
 function outputMessage(message) {
     const div = document.createElement('div');
+    if (oddNumMessage) {
+        div.setAttribute('id', 'messageVersion1');
+    } else {
+        div.setAttribute('id', 'messageVersion2');
+    }
+    oddNumMessage = !oddNumMessage;
     div.classList.add('message');
     var phrase = document.createElement("span");
     phrase.setAttribute("id", "time");
