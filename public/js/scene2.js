@@ -16,6 +16,7 @@ class scene2 extends Phaser.Scene {
         this.load.image('cardOldAgeLucky', 'images/old_age_lucky_card.png');
         this.load.image('cardStart', 'images/start_card.png');
         this.load.image('cardGoal', 'images/goal_card.png');
+        this.load.image('cardBlank', 'images/blank_card.png');
     }
     
     create() {
@@ -25,7 +26,7 @@ class scene2 extends Phaser.Scene {
         this.allCardsContainer = this.add.container(0, 0, cards);
 
         // Keyboard inputs
-        this.keyboard = this.input.keyboard.addKeys("LEFT,RIGHT,UP,DOWN,SPACE");
+        this.keyboard = this.input.keyboard.addKeys("LEFT,RIGHT,SPACE");
 
         // Game variables
         this.boardOffset = 0;
@@ -61,15 +62,41 @@ class scene2 extends Phaser.Scene {
     }
 
     update() {
-        // update all player locations
+        // Update all player locations
         for (let i = 0; i < players.length; i++) {
             this.allPlayersContainer.getAt(i).setPosition(this.cardList[players[i].location].xpos + this.boardOffset, this.cardList[players[i].location].ypos);
         }
 
-        // if it is your turn, show the text saying to roll a die
+        // Update all player balances
+        socket.on('balanceUpdate', ({usernames, balances}) => {
+            for (let i = 0; i < players.length; i++) {
+                let user = players[i];
+                user.balance = balances[usernames.indexOf(user.username)];
+            }
+        });
+
+        // Update all player children count
+        socket.on('childrenUpdate', ({usernames, children}) => {
+            for (let i = 0; i < players.length; i++) {
+                let user = players[i];
+                user.childrenCount = children[usernames.indexOf(user.username)];
+            }
+        });
+
+        // Update all player marital statuses
+        socket.on('marriageUpdate', ({usernames, partners}) => {
+            for (let i = 0; i < players.length; i++) {
+                let user = players[i];
+                if (partners[usernames.indexOf(user.username)] != null) {
+                    user.married = partners[usernames.indexOf(user.username)];
+                }
+            }
+        });
+
+        // If it is your turn, show the text saying to roll a die
         this.yourTurnText.visible = (userID === this.turn);
 
-        // left and right movement scrolling
+        // Left and right movement scrolling
         if (this.keyboard.LEFT.isDown && this.allCardsContainer.x <= 0) {
             this.boardOffset += 10;
             this.allCardsContainer.x += 10;
@@ -82,8 +109,9 @@ class scene2 extends Phaser.Scene {
         // Press space on your turn to roll die and move forward
         if (this.keyboard.SPACE.isDown && (this.turn === userID)) {
             var dieValue = this.rollDie();
-            if (players[userID].location + dieValue >= 100) { // ADD END OF GAME EMIT HERE
+            if (players[userID].location + dieValue >= 100) {
                 players[userID].location = 100;
+                socket.emit('gameEnd', (true));
             } else { // game has not ended yet, so run a turn
                 let index = this.getLandedCardIndex(players[userID].location + dieValue);
                 let playerID = userID;
@@ -170,19 +198,80 @@ class scene2 extends Phaser.Scene {
         var landedCardIndex = this.getLandedCardIndex(newPlayerLocation);
         //this.moveUserPiece(playerID, dieValue, newPlayerLocation);
         this.displayLandedCard(landedCardIndex);
-        this.hideDisplayCardEvent = this.time.addEvent({ delay: 3000, callback: this.hideDisplayCard, callbackScope: this });
         this.turn = (playerID + 1) % players.length;
     }
 
     // displays the card at inputted index
     displayLandedCard(index) {
         let card = this.allCardsContainer.getAt(index);
-        card.setX(800 - this.boardOffset);
-        card.setY(450);
-        card.setScale(1);
-        card.setAngle(0);
         this.allCardsContainer.bringToTop(card);
         this.displayingCard = true;
+        this.animateLandedCard(card);
+        // card.setX(800 - this.boardOffset);
+        // card.setY(450);
+        // card.setScale(1);
+        // card.setAngle(0);
+        //this.hideDisplayCardEvent = this.time.addEvent({ delay: 3000, callback: this.hideDisplayCard, callbackScope: this });
+    }
+
+    // animation to move card to center of screen
+    animateLandedCard(card) {
+        var self = this;
+        this.tweens.add({
+            targets: card,
+            props: {
+                x: 600 - this.boardOffset,
+                y: 450,
+                rotation: 0,
+                scaleX: 1,
+                scaleY: 1
+            },
+            duration: cardMoveToCenterTime,
+            yoyo: false,
+            repeat: 0,
+            onComplete: this.flipLandedCard,
+            onCompleteParams: [self, card]
+        });
+    }
+
+    flipLandedCard(tween, targets, self, card) {
+        self.tweens.add({
+            targets: card,
+            props: {
+                scaleX: 0
+            },
+            delay: 250,
+            duration: cardFlipTime / 2,
+            yoyo: false,
+            repeat: 0,
+            onComplete: self.flipLandedCard2,
+            onCompleteParams: [self]
+        });
+    }
+
+    flipLandedCard2(tween, targets, self) {
+        self.allCardsContainer.last.destroy();
+        self.goalCard = self.add.sprite(600 - self.boardOffset, 450, 'cardBlank').setOrigin(0.5);
+        self.goalCard.scaleX = 0;
+        self.tweens.add({
+            targets: self.goalCard,
+            props: {
+                scaleX: 1
+            },
+            duration: cardFlipTime / 2,
+            yoyo: false,
+            repeat: 0,
+            onComplete: self.cardAnimationEnd,
+            onCompleteParams: self
+        });
+    }
+
+    cardAnimationEnd(tween, targets, self) {
+        self.goalCard.setInteractive();
+        self.goalCard.on('pointerdown', function() {
+            self.goalCard.destroy();
+            self.displayingCard = false;
+        });
     }
 
     // hides the card the player landed on

@@ -129,6 +129,11 @@ io.on('connection', socket => {
         allChildren(client, socket, io);
         allMarriage(client, socket, io);
     });
+
+    // Listens for game end
+    socket.on('gameEnd', (filler) => {
+        tabulatePlayers(client, socket, io);
+    });
 });
 
 const port = process.env.PORT || 8000;
