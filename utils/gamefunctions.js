@@ -1,42 +1,4 @@
 const { userJoin, getCurrentUser, userLeave, getRoomUsers } = require('./users');
-const e = require('express');
-
-// Creates the array that holds the pulled cards for each room
-function createCardSet(room, client) {
-    const text = 'INSERT INTO cardsets(roomname, eventadult, eventold, remainder) VALUES($1,$2,$3,$4)';
-    const values = [room, [], [], []];
-    client
-        .query(text, values)
-        .catch (e => console.error(e.stack));
-}
-
-// Deletes the array that holds the pulled cards for each room when they are emptied
-function deleteCardSet(room, client) {
-    const text = 'DELETE FROM cardsets WHERE roomname = $1';
-    const values = [room];
-    client
-        .query(text, values)
-        .catch (e => console.error(e.stack));
-}
-
-// Adds the user to the users table
-function addUser(socket, client) {
-    let tempUser = getCurrentUser(socket.id);
-    const text = 'INSERT INTO users(id, balance, children, traits, married, room, receiving, giving, earning, penalty, college, alive, username) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)';
-    const values = [socket.id, 0, 0, [], null, tempUser.room, 1, 1, 1, 1, 1, true, tempUser.username];
-    client
-        .query(text,values)
-        .catch (e => console.error(e.stack));
-}
-
-// Removes the user from the users table when they disconnect
-function removeUser(socket, client) {
-    const text = 'DELETE FROM users WHERE id = $1';
-    const values = [socket.id];
-    client
-        .query(text,values)
-        .catch (e => console.error(e.stack));
-}
 
 // Takes the type of card and age zone, does the proper updates to the user's data, and emits the proper information to display the card
 function pullCard(cardtype, age, client, socket, io) {
@@ -754,6 +716,7 @@ function getChildren(id, client) {
         .catch (e => console.error(e.stack));
 }
 
+// Gets the living status of the given player (ID)
 function getAlive(id, client) {
     const text = 'SELECT * FROM users WHERE id = $1';
     const values = [id];
@@ -765,6 +728,44 @@ function getAlive(id, client) {
         .catch (e => console.error(e.stack));
 }
 
+// Creates the array that holds the pulled cards for each room
+function createCardSet(room, client) {
+    const text = 'INSERT INTO cardsets(roomname, eventadult, eventold, remainder) VALUES($1,$2,$3,$4)';
+    const values = [room, [], [], []];
+    client
+        .query(text, values)
+        .catch (e => console.error(e.stack));
+}
+
+// Deletes the array that holds the pulled cards for each room when they are emptied
+function deleteCardSet(room, client) {
+    const text = 'DELETE FROM cardsets WHERE roomname = $1';
+    const values = [room];
+    client
+        .query(text, values)
+        .catch (e => console.error(e.stack));
+}
+
+// Adds the user to the users table
+function addUser(socket, client) {
+    let tempUser = getCurrentUser(socket.id);
+    const text = 'INSERT INTO users(id, balance, children, traits, married, room, receiving, giving, earning, penalty, college, alive, username) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)';
+    const values = [socket.id, 0, 0, [], null, tempUser.room, 1, 1, 1, 1, 1, true, tempUser.username];
+    client
+        .query(text,values)
+        .catch (e => console.error(e.stack));
+}
+
+// Removes the user from the users table when they disconnect
+function removeUser(socket, client) {
+    const text = 'DELETE FROM users WHERE id = $1';
+    const values = [socket.id];
+    client
+        .query(text,values)
+        .catch (e => console.error(e.stack));
+}
+
+// Enacts the college event upon exiting child zone
 function college(client, socket, io) {
     let collegeText = 'You have arrived at adulthood. Would you like to pursue a college education for 10 million yen and a lost turn? You are allowed to go into debt.'
     socket.emit('collegeResponse', {collegeText});
@@ -777,6 +778,7 @@ function college(client, socket, io) {
     });
 }
 
+// Tabulates the players at the end based on living status and balance to help determine a winner
 function tabulatePlayers(client, socket, io) {
     let room = getCurrentUser(socket.id).room;
     const text = 'SELECT username, (20*children+balance) AS totalBalance FROM users WHERE room= $1 ORDER BY alive DESC, totalBalance DESC;';
@@ -796,6 +798,7 @@ function tabulatePlayers(client, socket, io) {
     io.to(room).emit('finalTabulation', {usernames, balances});
 }
 
+// Emits the balance of all players
 function allBalances(client, socket, io) {
     let room = getCurrentUser(socket.id).room;
     let usernames = [];
@@ -815,6 +818,7 @@ function allBalances(client, socket, io) {
     io.to(room).emit('balanceUpdate', {usernames, balances});
 }
 
+// emits the number of children of all players
 function allChildren(client, socket, io) {
     let room = getCurrentUser(socket.id).room;
     let usernames = [];
@@ -834,10 +838,12 @@ function allChildren(client, socket, io) {
     io.to(room).emit('childrenUpdate', {usernames, children});
 }
 
+// Emits the username of each players marriage partner
 function allMarriage(client, socket, io) {
     let room = getCurrentUser(socket.id).room;
     let usernames = [];
     let partners = [];
+    let partnerUsername;
     const text = 'SELECT married, username FROM users WHERE room = $1';
     const values = [room];
     client
@@ -845,8 +851,9 @@ function allMarriage(client, socket, io) {
         .then (res => {
             const data = res.rows;
             data.forEach (row => {
+                partnerUsername = getCurrentUser(married).username;
                 usernames.push(row.username);
-                partners.push(row.married);
+                partners.push(partnerUsername);
             })
         })
         .catch (e => console.error(e.stack));
@@ -854,16 +861,3 @@ function allMarriage(client, socket, io) {
 }
 
 module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser, college, tabulatePlayers, allBalances, allChildren, allMarriage};
-
-/*     const text = 'SELECT * FROM '
-client.query('SELECT * FROM bad;', (err, res) => {
-    if (err) {
-        console.log("Test");
-    };
-    for (let row of res.rows) {
-        console.log(JSON.stringify(row));
-    }
-    client.end();
-})
-
-*/
