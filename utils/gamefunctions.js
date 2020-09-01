@@ -860,4 +860,23 @@ function allMarriage(client, socket, io) {
     io.to(room).emit('marriageUpdate', {usernames, partners});
 }
 
-module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser, college, tabulatePlayers, allBalances, allChildren, allMarriage};
+function allTraits(client, socket, io) {
+    let room = getCurrentUser(socket.id).room;
+    let usernames = [];
+    let traits = [];
+    const text = 'SELECT traits FROM users WHERE room = $1';
+    const values = [room];
+    client
+        .query(text, values)
+        .then (res => {
+            const data = res.rows;
+            data.forEach (row => {
+                usernames.push(row.username);
+                traits.push(traits);
+            })
+        })
+        .catch (e => console.error(e.stack));
+    io.to(room).emit('marriageUpdate', {usernames, traits});
+}
+
+module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser, college, tabulatePlayers, allBalances, allChildren, allMarriage, allTraits};
