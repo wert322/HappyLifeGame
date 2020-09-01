@@ -2,182 +2,190 @@ const { userJoin, getCurrentUser, userLeave, getRoomUsers } = require('./users')
 
 // Takes the type of card and age zone, does the proper updates to the user's data, and emits the proper information to display the card
 function pullCard(cardtype, age, client, socket, io) {
-    var marriedStatus = getPartner(socket, client, io);
+    let partnerID = getPartner(socket, client, io);
+    let remainderDiscards = getCardSet(socket, client, 'remainder');
+    let eventadultDiscards = getCardSet(socket, client,'eventadult');
+    let eventoldDiscards = getCardSet(socket, client, 'eventold');
+    
+    let currentUser = getCurrentUser(socket.id);
+    let room = currentUser.room;
+    let cardDescription = new Text;
+    let iconCode = new Text;
+
     if (cardtype === 'good') {
-        let tempArray = getCardSet(socket, client, 'remainder');
         const text = 'SELECT * FROM good WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
-        const values = [age, tempArray];
+        const values = [age, remainderDiscards];
         client.query(text, values, (err, res) => {
             if (err) {
                 console.log(err);
             } else {
-                var tempRow = res.rows[0];
-                if (tempRow.traitcard === 2) {
-                    doubleTraits(tempRow, socket, io, client);
+                let goodData = res.rows[0];
+
+                cardDescription = goodData.description;
+                iconCode = goodData.icon;
+                io.to(room).emit('showRegularCard', {cardDescription, iconCode});
+
+                if (goodData.traitcard === 2) {
+                    doubleTraits(socket, io, client);
                 } else {
-                    if (tempRow.mobility) {
-                        goodMobility(tempRow, socket, io);
+                    if (goodData.mobility) {
+                        goodMobility(goodData, socket, io);
                     }
-                    if (tempRow.traitcard === 1) {
-                        giveTrait(tempRow.trait, socket.id, io, client);
-                        if (marriedStatus !== null) {
-                            giveTrait(tempRow.trait, marriedStatus, io, client);
+                    if (goodData.traitcard === 1) {
+                        giveTrait(goodData.trait, socket.id, io, client);
+                        if (partnerID !== null) {
+                            giveTrait(goodData.trait, partnerID, io, client);
                         }
                     }
-                    if (tempRow.money) {
-                        moneyUpdate(tempRow,'good', socket, io, client);
-                    } else {
-                        let tempDescription = tempRow.description;
-                        let tempIcon = tempRow.icon;
-                        let tempUser = getCurrentUser(socket.id);
-                        let tempUsername = tempUser.username;
-                        io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon, tempUsername});
-                    }
+                    if (goodData.money) {
+                        moneyUpdate(goodData, 'good', socket, io, client);
+                    } 
                 }
-                discardCard(tempRow, socket, client, 'remainder');
+                discardCard(goodData, socket, client, 'remainder');
             }
         })
     } else if (cardtype === 'bad') {
-        let tempArray = getCardSet(socket, client, 'remainder');
         const text = 'SELECT * FROM bad WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
-        const values = [age, tempArray];
+        const values = [age, remainderDiscards];
         client.query(text, values, (err, res) => {
             if (err) {
                 console.log(err);
-            } else {
-                var tempRow = res.rows[0];
-                if (tempRow.id === 'BC1' || tempRow.id === 'BA5') {
-                    suddenDeath(tempRow, socket, client, io, socket.id);
-                } else if (tempRow.id === 'BC5'){
-                    kidnapping(tempRow, socket, client, io);
+            } else {   
+                var badData = res.rows[0];
+                
+                cardDescription = badData.description;
+                iconCode = badData.icon;
+                io.to(room).emit('showRegularCard', {cardDescription, iconCode});
+
+                if (badData.id === 'BC1' || badData.id === 'BA5') {
+                    suddenDeath(badData, socket, client, io, socket.id);
+                } else if (badData.id === 'BC5'){
+                    kidnapping(badData, socket, client, io);
                 } else {
-                    if (tempRow.traitcard) {
-                        giveTrait(tempRow.trait, socket.id, io, client);
-                        if (marriedStatus !== null) {
-                            giveTrait(tempRow.trait, marriedStatus, io, client);
+                    if (badData.traitcard) {
+                        giveTrait(badData.trait, socket.id, io, client);
+                        if (partnerID !== null) {
+                            giveTrait(badData.trait, partnerID, io, client);
                         }
                     }
-                    if (tempRow.loseturn) {
+                    if (badData.loseturn) {
                         loseTurn(socket, io, client);
                     }
-                    if (tempRow.money) {
-                        moneyUpdate(tempRow,'bad', socket, io, client);
-                    } else {
-                        let tempDescription = tempRow.description;
-                        let tempIcon = tempRow.icon;
-                        let tempUser = getCurrentUser(socket.id);
-                        let tempUsername = tempUser.username;
-                        io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon, tempUsername});
-                    }
-                }
-                discardCard(tempRow, socket, client, 'remainder');
+                    if (badData.money) {
+                        moneyUpdate(badData,'bad', socket, io, client);
+                    } 
+                }  
+                discardCard(badData, socket, client, 'remainder');
             }
         });
     } else {
         let marriedCount = getMarriedCount(socket, client);
         let totalCount = getRoomUsers(getCurrentUser(socket.id).room).length;
-        let tempArray1 = getCardSet(socket, client, 'remainder');
-        let tempArray2 = getCardSet(socket, client,'eventadult');
-        let tempArray3 = getCardSet(socket, client, 'eventold');
-        let tempArray = tempArray1;
-        if (marriedStatus === null) {
-            tempArray.concat(['EA1', 'EA2', 'EO1', 'EO2']);
+        let combinedDiscards = remainderDiscards;
+        if (partnerID === null) {
+            combinedDiscards.concat(['EA1', 'EA2', 'EO1', 'EO2']);
             if (totalCount - marriedCount < 2) {
-                tempArray.concat(['EA3', 'EO3']);
+                combinedDiscards.concat(['EA3', 'EO3']);
             }
         } else {
-            tempArray.concat(['EA3', 'EO3']);
+            combinedDiscards.concat(['EA3', 'EO3']);
         }
-        if (tempArray2.length === 8) {
-            tempArray2 = [];
+        if (eventadultDiscards.length === 8) {
+            eventadultDiscards = [];
         }
-        if (tempArray3.length === 8) {
-            tempArray3 = [];
+        if (eventoldDiscards.length === 8) {
+            eventoldDiscards = [];
         }
-        tempArray = tempArray.concat(tempArray2).concat(tempArray3);
+        combinedDiscards = combinedDiscards.concat(eventadultDiscards).concat(eventoldDiscards);
         const text = 'SELECT * FROM events WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
-        const values = [age, tempArray];
+        const values = [age, combinedDiscards];
         client.query(text, values, (err, res) => {
             if (err) {
                 console.log(err);
             } else {
-                var tempRow = res.rows[0];
-                standardEvent(tempRow, socket, client, io, age);
+                let eventData = res.rows[0];
+                standardEvent(eventData, socket, client, io, age);
             }
         });
     }
 }
 
 // For good cards that have traits = 2
-function doubleTraits(tempRow, socket, io, client) {
+function doubleTraits(socket, io, client) {
     let result = Math.floor(Math.random() * 6 + 1);
-    let cardChoice;
-    let tempUser = getCurrentUser(socket.id);
-    let tempDescription = tempRow.description;
-    let tempIcon = tempRow.icon;
-    let tempUsername = tempUser.username;
-    var changePhrase;
+    
+    let currentUser = getCurrentUser(socket.id);
+    let partnerID = getPartner(socket, client, io);
+    let room = currentUser.room;
+    
+    let cardChoice = new Text;
+    let resultPhrase = new Text;
+    
     if (result < 4) {
         cardChoice = 'T3';
-        changePhrase = 'You rolled a ' + result + ', giving you honmmei chocos and the romantic trait as a result!'
+        resultPhrase = 'You rolled a ' + result + ', giving you honmmei chocos and the romantic trait as a result!'
     } else {
         cardChoice = 'T4';
-        changePhrase = 'You rolled a ' + result + ', giving you giri chocos and the romantic trait as a result!'
+        resultPhrase = 'You rolled a ' + result + ', giving you giri chocos and the romantic trait as a result!'
     }
 
-    io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, changePhrase, tempUsername});
+    io.to(room).emit('showRegularOutcome', {resultPhrase});
     giveTrait(cardChoice, socket.id, io, client);
-    if (getPartner(socket, client, io) !== null) {
-        let partnerID = getPartner(socket, client, io);
+    
+    if (partnerID !== null) {
         giveTrait(cardChoice, partnerID, io, client);
     }
 }
 
 // Used to give trait cards, used for all types
 function giveTrait(traitID, id, io, client) {
-    let tempArray = getTraits(client, id);
-    if (!tempArray.includes(traitID)) {
-        tempArray.push(tempID);
-        updateTraits(tempArray, client, id, traitID);
-        // Maybe emit event to indicate that the db has been updated 
+    let userTraits = getTraits(client, id);
+    let room = getCurrentUser(id).room;
+
+    if (!userTraits.includes(traitID)) {
+        userTraits.push(traitID);
+        updateTraits(userTraits, client, id, traitID);
     } else {
-        // Maybe emit a custom event for when they already have the trait card: TBD, confer with Brandon
+        io.to(room).emit('traitOccupied', {description: 'You already have this trait.'});
     }
 }
 
 // Updates the users db to hold the users new traits list. Also updates his coefficients. Does not do anything to the marriage card except add it to the array
-function updateTraits(tempArray, client, id, trait) {
+function updateTraits(userTraits, client, id, traitID) {
+    let traitDetails = getTraitDetails(client, traitID);
+    let value = 1;
+    
     const text = 'UPDATE users SET traits = $1 WHERE id = $2';
-    const values = [tempArray, id];
+    const values = [userTraits, id];
+    
     client
         .query(text, values)
         .catch (e => console.error(e.stack));
-    var tempRow = getTraitDetails(client, trait);
-    var tempValue = 1;
-    if (tempRow.receiving) {
-        tempValue = tempRow.receivingc * getCoefficient(client, 'receiving', id);
-        updateCoefficient(client,'receiving',id,tempValue);
-        tempValue = 1;
+
+    if (traitDetails.receiving) {
+        value = traitDetails.receivingc * getCoefficient(client, 'receiving', id);
+        updateCoefficient(client, 'receiving', id, value);
+        value = 1;
     }
-    if (tempRow.giving) {
-        tempValue = tempRow.givingc * getCoefficient(client, 'giving', id);
-        updateCoefficient(client,'giving',id,tempValue);
-        tempValue = 1;
+    if (traitDetails.giving) {
+        value = traitDetails.givingc * getCoefficient(client, 'giving', id);
+        updateCoefficient(client, 'giving', id, value);
+        value = 1;
     }
-    if (tempRow.earning) {
-        tempValue = tempRow.earningc * getCoefficient(client, 'earning', id);
-        updateCoefficient(client,'earning',id,tempValue);
-        tempValue = 1;
+    if (traitDetails.earning) {
+        value = traitDetails.earningc * getCoefficient(client, 'earning', id);
+        updateCoefficient(client, 'earning', id, value);
+        value = 1;
     }
-    if (tempRow.penalty) {
-        tempValue = tempRow.penaltyc * getCoefficient(client, 'penalty', id);
-        updateCoefficient(client,'penalty',id,tempValue);
-        tempValue = 1;
+    if (traitDetails.penalty) {
+        value = traitDetails.penaltyc * getCoefficient(client, 'penalty', id);
+        updateCoefficient(client, 'penalty', id, value);
+        value = 1;
     }
-    if (tempRow.college) {
-        tempValue = tempRow.collegec * getCoefficient(client, 'college', id);
-        updateCoefficient(client,'college',id,tempValue);
-        tempValue = 1;
+    if (traitDetails.college) {
+        value = traitDetails.collegec * getCoefficient(client, 'college', id);
+        updateCoefficient(client, 'college', id, value);
+        value = 1;
     }
 }
 
@@ -206,49 +214,45 @@ function getTraitDetails(client, trait) {
 }
 
 // Used to update the money of cards, used for all types. Can take in good dice roll cards. Adds in the coefficient 
-function moneyUpdate(tempRow, type, socket, io, client) {
-    var tempDescription = tempRow.description;
-    var tempIcon = tempRow.icon;
-    var tempUser = getCurrentUser(socket.id);
-    var tempCoefficient;
-    var tempValue = tempRow.value;
-    let tempUsername = tempUser.username;
+function moneyUpdate(cardData, type, socket, io, client) {
+    let room = getCurrentUser(socket.id).room;
+    
+    let coefficient;
+    let value = cardData.value;
+
     if (type === 'good') {
-        tempCoefficient = getCoefficient(client, 'earning', socket.id);
-        tempValue *= tempCoefficient;
-        if (tempRow.rolldice) {
+        coefficient = getCoefficient(client, 'earning', socket.id);
+        value *= coefficient;
+        if (cardData.rolldice) {
             let result = Math.floor(Math.random() * 6 + 1);
-            tempValue *= result;
-            var changePhrase = 'You rolled a ' + result + ', and received ' + tempValue + ' million yen as a result.';
-            io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, changePhrase, tempUsername});
-        } else {
-            io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon, tempUsername});
-        }
-        updateBalance(client, socket, socket.id, tempValue, io, false);
+            value *= result;
+            let resultPhrase = 'You rolled a ' + result + ', and received ' + value + ' million yen as a result.';
+            io.to(room).emit('showRegularOutcome', {resultPhrase});
+        } 
+        updateBalance(client, socket, socket.id, value, io, false);
     } else if (type === 'bad') {
-        tempCoefficient = getCoefficient(client, 'penalty', socket.id);
-        if (tempRow.percent) {
-            tempValue = 1 - tempValue;
-            tempValue *= tempCoefficient;
-            let tempBalance = getBalance(client, socket.id);
-            tempValue *= tempBalance;
+        coefficient = getCoefficient(client, 'penalty', socket.id);
+        if (cardData.percent) {
+            value = 1 - value;
+            value *= coefficient;
+            let balance = getBalance(client, socket.id);
+            value *= balance;
         } else {
-            tempValue *= tempCoefficient;
+            value *= coefficient;
         }
-        tempValue *= -1;
-        updateBalance(client, socket, socket.id, tempValue, io, false);
-        io.to(tempUser.room).emit('showRegularGB', {tempDescription, tempIcon, tempUsername});
-    } else if (type === 'choice') {
+        value *= -1;
+        updateBalance(client, socket, socket.id, value, io, false);
+    } else { // Type: choice
         if (value < 0) {
-            tempCoefficient = getCoefficient(client, 'penalty', socket.id);
+            coefficient = getCoefficient(client, 'penalty', socket.id);
         } else {
-            tempCoefficient = getCoefficient(client, 'earning', socket.id);
+            coefficient = getCoefficient(client, 'earning', socket.id);
         }
-        tempValue *= tempCoefficient;
-        updateBalance(client, socket, socket.id, tempValue, io, false);
-        // For events: MORE COMPLEX
+        value *= coefficient;
+        updateBalance(client, socket, socket.id, value, io, false);
+
     } 
-    // FOR NON STANDARD CHOICES
+
 }
 
 // Takes the player and the value of the sum to be added or subtracted, and updates the DB accordingly
@@ -305,75 +309,68 @@ function updateCoefficient(client, header, id, value) {
 }
 
 // Used for good mobility cards, which add a few extra spaces to the next turn
-function goodMobility(tempRow, socket, io) {
+function goodMobility(goodData, socket, io) {
     let partnerID = getPartner(socket, client, io);
-    var tempSquares = tempRow.squares;
+    var squaresNumber = goodData.squares;
     socket.emit('addSpacesNext', {tempSquares});
     if (partnerID !== null) {
-        socket.to(partnerID).emit('addSpacesNext', {tempSquares});
+        socket.to(partnerID).emit('addSpacesNext', {squaresNumber});
     }
 }
 
 // Takes the player and for either of the sudden death events (BC1 and BC5), rolls the dice and accordingly penalizes the player or kills them
-function suddenDeath(tempRow, socket, client, io, id) {
-    var partnerID = getPartner(socket, client, io);
-    var tempDescription = tempRow.description;
-    var tempIcon = tempRow.icon;
-    var tempUser = getCurrentUser(id);
-    let tempUsername = tempUser.username;
-    var result = Math.floor(Math.random() * 6 + 1);
-    var result2 = Math.floor(Math.random() * 6 + 1);
-    result *= result2;
-    var customPhrase = 'You rolled a ' + result2;
+function suddenDeath(cardData, socket, client, io, id) {
+    let partnerID = getPartner(socket, client, io);
+    let room = getCurrentUser(id).room;
+
+    let result = Math.floor(Math.random() * 6 + 1) * Math.floor(Math.random() * 6 + 1);
+    let resultPhrase = 'You rolled a ' +  result;
+
     if (result === 1 || result === 36) {
         const text = 'UPDATE users SET alive = $1 WHERE id = $2';
-        let values = [false, id];
+        const values = [false, id];
         client
             .query(text, values)
             .catch(e => console.error(e.stack));
-        customPhrase = customPhrase + ' and as a result, you have died. Better luck next time!';
+        resultPhrase = resultPhrase + ' and as a result, you have died. Better luck next time!';
+        socket.emit('deathEvent', {filler: true});
         if (partnerID !== null) {
             values = [false, partnerID];
             client
                 .query(text, values)
                 .catch(e=> console.error(e.stack));
-        // Emit event probably
+            socket.to(partnerID).emit('deathEvent', {filler: true});
         }
     } else {
-        var tempValue = tempRow.value;
-        var tempCoefficient = getCoefficient(client, 'penalty', id);
-        tempValue *= tempCoefficient;
-        customPhrase = customPhrase + '. You survive, but you pay ' + tempValue + ' million yen in medical fees.';
-        tempValue *= -1;
-        updateBalance(client, socket, id, tempValue, io, false);
+        let value = cardData.value;
+        let coefficient = getCoefficient(client, 'penalty', id);
+        value *= coefficient;
+        resultPhrase = resultPhrase + '. You survive, but you pay ' + value + ' million yen in medical fees.';
+        value *= -1;
+        updateBalance(client, socket, id, value, io, false);
     }
-    // Emit event probably
-    io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, customPhrase, tempUsername});
+    io.to(room).emit('showRegularOutcome', {resultPhrase});
 }
 
 // Takes the player and for the kidnapping event (BC5), rolls the dice and accordingly penalizes the player or makes them lose a turn
-function kidnapping(tempRow, socket, client, io) {
-    var tempDescription = tempRow.description;
-    var tempIcon = tempRow.icon;
-    var tempUser = getCurrentUser(socket.id);
-    var tempUsername = tempUser.username;
-    var result = Math.floor(Math.random() * 6 + 1);
-    var result2 = Math.floor(Math.random() * 6 + 1);
-    result += result2;
-    var changePhrase = 'You rolled a ' + result;
+function kidnapping(badData, socket, client, io) {
+    let room = getCurrentUser(socket.id).room;
+
+    let result = Math.floor(Math.random() * 6 + 1) + Math.floor(Math.random() * 6 + 1);
+    let resultPhrase = 'You rolled a ' + result;
+
     if (result < 5 || result > 9) {
-        changePhrase = changePhrase + '. Unfortunately you are kidnapped and you lose your next turn.';
+        resultPhrase = resultPhrase + '. Unfortunately you are kidnapped and you lose your next turn.';
         loseTurn(socket, client, io);
     } else {
-        var tempValue = tempRow.value;
-        var tempCoefficient = getCoefficient(client, 'penalty', socket.id);
-        tempValue *= tempCoefficient;
-        changePhrase = changePhrase + '. You pay a ransom of ' + tempValue + ' million yen to be set free.';
-        tempValue *= -1;
-        updateBalance(client, socket, socket.id, tempValue, io, false);
+        let value = badData.value;
+        let coefficient = getCoefficient(client, 'penalty', socket.id);
+        value *= coefficient;
+        resultPhrase = resultPhrase + '. You pay a ransom of ' + value + ' million yen to be set free.';
+        value *= -1;
+        updateBalance(client, socket, socket.id, value, io, false);
     }
-    // Emit event possibly
-    io.to(tempUser.room).emit('showModifiedGB', {tempDescription, tempIcon, changePhrase, tempUsername});
+    io.to(room).emit('showRegularOutcome', {resultPhrase});
 }
 
 // Emits event that the player should lose their next turn. Currently just emits hardcoded 1 turn, but can be changed to be dynamic
@@ -411,12 +408,17 @@ function getCardSet(socket, client, setType) {
 }
 
 //  Takes the specified event and obtains the user's response before then operating on it. Also takes into account special situations and passes the corresponding type to helper methods
-function standardEvent(tempRow, socket, client, io, age) {
-    var partnerID = getPartner(socket, client, io);
-    if (tempRow.choice1text !== null && tempRow.id !== 'EA6' && tempRow.id !== 'EO5') {
-        let tempArray = [tempRow.choice1text, tempRow.choice1, tempRow.choice2text, tempRow.choice2];
-        let setType;
-        socket.emit('twoChoiceEvent', {tempArray});
+function standardEvent(eventData, socket, client, io, age) {
+    let room = getCurrentUser(socket.id).room;
+    let partnerID = getPartner(socket, client, io);
+    let setType;
+    let choicesArray
+    let cardDescription = eventData.description;
+    io.to(room).emit('showRegularCard', {cardDescription, null});
+    io.emit
+    if (eventData.choice1text !== null && eventData.id !== 'EA6' && eventData.id !== 'EO5') {
+        choicesArray = [eventData.choice1text, eventData.choice1, eventData.choice2text, eventData.choice2];
+        socket.emit('twoChoiceEvent', {choicesArray});
         socket.on('twoChoiceResponse', ({choiceID}) => {
             choicesUpdate(socket, client, io, choiceID, 'standard', null);
         })
@@ -427,11 +429,10 @@ function standardEvent(tempRow, socket, client, io, age) {
         } else {
             setType = 'eventold';
         }
-        discardCard(tempRow, socket, client, setType);
-    } else if (tempRow.id === 'EA6' || tempRow.id === 'EO5') {
-        let tempArray = [tempRow.choice1text, tempRow.choice1, tempRow.choice2text, tempRow.choice2];
-        let setType;
-        socket.emit('investChoiceEvent', {tempArray});
+        discardCard(eventData, socket, client, setType);
+    } else if (eventData.id === 'EA6' || eventData.id === 'EO5') {
+        choicesArray = [eventData.choice1text, eventData.choice1, eventData.choice2text, eventData.choice2];
+        socket.emit('investChoiceEvent', {choicesArray});
         socket.on('investChoiceResponse', ({choiceID, input}) => {
             if (choiceID === 'C28') {
                 choicesUpdate(socket, client, io, choiceID, 'invest', input);
@@ -444,77 +445,75 @@ function standardEvent(tempRow, socket, client, io, age) {
         } else {
             setType = 'eventold';
         }
-        discardCard(tempRow, socket, client, setType);
-    } else if (tempRow.id === 'EA1' || tempRow.id === 'EO1') { //Divorce   
-        divorceCard(tempRow, socket, client, io);
-    } else if (tempRow.id === 'EA2' || tempRow.id === 'EO2') { //Children
-        childrenCard(tempRow.id, socket, client, io);
-    } else if (tempRow.id === 'EA3' || tempRow.id === 'EO3') { //Married
-        marriageCard(tempRow, socket, client, io);
-    } else if (tempRow.id === 'EO6') {  //Sell house
+        discardCard(eventData, socket, client, setType);
+    } else if (eventData.id === 'EA1' || eventData.id === 'EO1') { //Divorce   
+        divorceCard(eventData, socket, client, io);
+    } else if (eventData.id === 'EA2' || eventData.id === 'EO2') { //Children
+        childrenCard(eventData.id, socket, client, io);
+    } else if (eventData.id === 'EA3' || eventData.id === 'EO3') { //Married
+        marriageCard(socket, client, io);
+    } else if (eventData.id === 'EO6') {  //Sell house
         choicesUpdate(socket, client, io, 'C41', 'standard', null);
-        discardCard(tempRow, socket, client, 'eventold');
-    } else if (tempRow.id === 'EO7') { //Book club
+        discardCard(eventData, socket, client, 'eventold');
+    } else if (eventData.id === 'EO7') { //Book club
         choicesUpdate(socket, client, io, 'C56', 'bookclub', null);
-        discardCard(tempRow, socket, client, 'eventold');
-    } else if (tempRow.id === 'EO10') { //Elected as mayor
+        discardCard(eventData, socket, client, 'eventold');
+    } else if (eventData.id === 'EO10') { //Elected as mayor
         choicesUpdate(socket, client, io, 'C48', 'standard', null);
-        discardCard(tempRow, socket, client, 'eventold');
+        discardCard(eventData, socket, client, 'eventold');
     } else { //Become guardian of child
         updateChildren(socket.id, client, 1);
         if (partnerID !== null) {
             updateChildren(partnerID, client, 1);
         }
-        // Event maybe
-    }   discardCard(tempRow, socket, client, 'eventold')
+        choicesUpdate(socket, client, io, 'C49', 'standard', null);
+        discardCard(eventData, socket, client, 'eventold');
+    }   
+
 }
 
 // Takes in the given choice by ID and operates it based on the specific type
 function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
-    var tempUser = getCurrentUser(socket.id);
-    var userTraits = getTraits(client, socket.id);
-    var tempChoice = getChoiceDetails(client, choiceID);
+    let user = getCurrentUser(socket.id);
+    let userTraits = getTraits(client, socket.id);
+    let choice = getChoiceDetails(client, choiceID);
     let partnerID = getPartner(socket, client, io);
-    let tempUsername = tempUser.username;
-    let roomUsers = getRoomUsers(tempUser.room);
+    let roomUsers = getRoomUsers(user.room);
+    let choiceDescription = choice.description;
     let userC;
     let partnerC;
     let thirdC;
     if (choiceType === 'standard') {
-        if (tempChoice.factoringid !== 'null' && userTraits.includes(tempChoice.factoringid)) {
-            choiceID = tempChoice.redirectid;
-            tempChoice = getChoiceDetails(client, choiceID);
+        if (choice.factoringid !== 'null' && userTraits.includes(choice.factoringid)) {
+            choiceID = choice.redirectid;
+            choice = getChoiceDetails(client, choiceID);
         }
-        if (!tempChoice.effectless) {
+        if (!choice.effectless) {
             if (choiceID = 'C41') {
                 let result = Math.floor(Math.random() * 6 + 1);
-                tempChoice.value *= result;
-                // Possible event
+                choice.value *= result;
             } 
-            if (tempChoice.money) {
-                moneyUpdate(tempChoice, 'choice', socket, io, client);
+            if (choice.money) {
+                moneyUpdate(choice, 'choice', socket, io, client);
             }
-            if (tempChoice.turnchange) {
-                loseTurn(socket, io, client);
+            if (choice.turnchange) {
+                loseTurn(socket, client, io);
             }
-            if (tempChoice.hastrait) {
-                giveTrait(tempChoice.trait, socket.id, io, client);
+            if (choice.hastrait) {
+                giveTrait(choice.trait, socket.id, io, client);
                 if (marriedStatus !== null) {
-                    giveTrait(tempChoice.trait, marriedStatus, io, client);
+                    giveTrait(choice.trait, marriedStatus, io, client);
                 }
             }
         }
-        let tempDescription = tempChoice.description;
-        io.to(tempUser.room).emit('showRegularChoice', {tempDescription, tempUsername});
     } else if (choiceType === 'invest') {
         let result = Math.floor(Math.random() * 6 + 1);
-        let tempValue = input * result;
+        let value = input * result;
         if (result % 2 === 1) {
-            tempValue *= -1;
+            value *= -1;
         }
-        updateBalance(client, socket, socket.id, tempValue, io, false);
-        let tempPhrase = 'You rolled a ' + result + '. The result of your investment was a change of ' + tempValue + ' million yen.';
-        io.to(tempUser.room).emit('showRegularChoice', {tempPhrase, tempUsername});
+        updateBalance(client, socket, socket.id, value, io, false);
+        choiceDescription = 'You rolled a ' + result + '. The result of your investment was a change of ' + value + ' million yen.';
     } else if (choiceType === 'divorce') {
         updateMarriage(socket.id, client, io, null);
         updateMarriage(partnerID, client, io, null);
@@ -559,19 +558,19 @@ function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
                 updateBalance(client, socket, element.id, thirdC, io, true);
             }
         });
-    }  else if (choiceType === 'bookclub') {
-        // Events in here
+    }  else { //choiceType = 'bookclub'
         if (userTraits.includes('T4') && userTraits.includes('T12')) {
-            tempChoice.value = 10;
+            choice.value = 10;
         } else if (userTraits.includes('T4')) {
-            tempChoice.value = 20;
+            choice.value = 20;
         } else if (userTraits.includes('T12')) {
-            tempChoice.value = 0;
+            choice.value = 0;
         } else {
-            tempChoice.value = 10;
+            choice.value = 10;
         }
-        moneyUpdate(tempChoice ,'choice', socket, io, client);
+        moneyUpdate(choice ,'choice', socket, io, client);
     }
+    io.to(room).emit('showRegularOutcome', choiceDescription);
 }
 
 // Takes the ID of the choice and returns the corresponding row as an object
@@ -628,25 +627,26 @@ function getPartner(socket, client, io) {
 }
 
 // Handles the marriage event. Handles the checking of if they have the distrust trait and if they do, it prevents marriage while also removing those trait cards from their arrays
-function marriageCard(tempRow, socket, client, io) {
-    socket.emit('getPartnerID', {filler: true});
+function marriageCard(socket, client, io) {
+    socket.emit('getPartnerEvent', {filler: true});
     socket.on('getPartnerResponse', ({pID}) => {
-        let tempArray1 = getTraits(client, socket.id);
-        let tempArray2 = getTraits(client, pID);
-        if (!tempArray1.includes('T2') || !tempArray2.includes('T2')) {
+        let userTraits = getTraits(client, socket.id);
+        let partnerTraits = getTraits(client, pID);
+        if (!userTraits.includes('T2') || !partnerTraits.includes('T2')) {
             updateMarriage(pID, client, io, socket.id);
             updateMarriage(socket.id, client, io, pID);
             choicesUpdate(socket, client, io, 'C25', 'marriage', pID);
         } else {
-            if (tempArray1.includes('T2')) {
-                let index = tempArray1.indexOf('T2');
-                tempArray1.splice(index, 1);
-                updateTraits(tempArray1, client, socket.id, 'T2');
+            let index;
+            if (userTraits.includes('T2')) {
+                index = userTraits.indexOf('T2');
+                userTraits.splice(index, 1);
+                updateTraits(userTraits, client, socket.id, 'T2');
             }
-            if (tempArray2.includes('T2')) {
-                let index = tempArray2.indexOf('T2');
-                tempArray2.splice(index, 1);
-                updateTraits(tempArray2, client, pID, 'T2');
+            if (partnerTraits.includes('T2')) {
+                index = partnerTraits.indexOf('T2');
+                partnerTraits.splice(index, 1);
+                updateTraits(partnerTraits, client, pID, 'T2');
             }
             // Emit event maybe
             choicesUpdate(socket, client, io, 'C50', 'standard', null);
@@ -671,7 +671,7 @@ function getMarriedCount(socket, client) {
 function childrenCard(eventID, socket, client, io) {
     let result = Math.floor(Math.random() * 6 + 1) + Math.floor(Math.random() * 6 + 1);
     let numberChildren;
-    let choice;
+    let choiceID;
     if (eventID === 'EA2') {
         if (result === 2 || result === 12) {
             numberChildren = 3;
@@ -680,16 +680,16 @@ function childrenCard(eventID, socket, client, io) {
         } else {
             numberChildren = 1;
         }
-        choice = 'C24';
+        choiceID = 'C24';
     } else {
         if (result === 2 || result === 12) {
             numberChildren = 2;
         } else {
             numberChildren = 1;
         }
-        choice = 'C55';
+        choiceID = 'C55';
     }
-    choicesUpdate(socket, client, io, choice, 'children', numberChildren);
+    choicesUpdate(socket, client, io, choiceID, 'children', numberChildren);
 }
 
 // Updates the actual DB of the given player (ID) and with the number of new
@@ -860,4 +860,36 @@ function allMarriage(client, socket, io) {
     io.to(room).emit('marriageUpdate', {usernames, partners});
 }
 
-module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser, college, tabulatePlayers, allBalances, allChildren, allMarriage};
+function allTraits(client, socket, io) {
+    let room = getCurrentUser(socket.id).room;
+    let traitData;
+    let userTraits;
+    let usernames = [];
+    let traits = [];
+    let tempTraits = [];
+    let traitDetails = [];
+    const text = 'SELECT username, traits FROM users WHERE room = $1';
+    const values = [room];
+    client
+        .query(text, values)
+        .then (res => {
+            const data = res.rows;
+            data.forEach (row => {
+                tempTraits = [];
+                usernames.push(row.username);
+                userTraits = row.traits;
+                userTraits.forEach(element => {
+                    traitDetails = [];
+                    traitData = getTraitDetails(client, element);
+                    traitDetails.push(traitData.name);
+                    traitDetails.push(traitData.description);
+                    tempTraits.push(traitDetails);
+                })
+                traits.push(tempTraits);
+            })
+        })
+        .catch (e => console.error(e.stack));
+    io.to(room).emit('traitsUpdate', {usernames, traits});
+}
+
+module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser, college, tabulatePlayers, allBalances, allChildren, allMarriage, allTraits};
