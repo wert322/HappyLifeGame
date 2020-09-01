@@ -889,7 +889,7 @@ function allTraits(client, socket, io) {
             })
         })
         .catch (e => console.error(e.stack));
-    io.to(room).emit('marriageUpdate', {usernames, traits});
+    io.to(room).emit('traitsUpdate', {usernames, traits});
 }
 
 module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser, college, tabulatePlayers, allBalances, allChildren, allMarriage, allTraits};
