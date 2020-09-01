@@ -4,7 +4,7 @@ const express = require('express');
 const socketio = require('socket.io');
 const formatMessage = require('./utils/messages');
 const { userJoin, getCurrentUser, userLeave, getRoomUsers } = require('./utils/users');
-const { pullCard, createCardSet, deleteCardSet, addUser, removeUser, college, tabulatePlayers } = require('./utils/gamefunctions');
+const { pullCard, createCardSet, deleteCardSet, addUser, removeUser, college, tabulatePlayers, allBalances, allChildren, allMarriage} = require('./utils/gamefunctions');
 
 const app = express();
 const server = http.createServer(app);
@@ -28,10 +28,6 @@ io.on('connection', socket => {
 
     socket.on('collegeEvent', ({filler}) => {
         college(client, socket, io);
-    });
-
-    socket.on('drawCard', ({cardtype, age}) => {
-        pullCard(cardtype, age, client, socket, io);
     });
 
     // Checks if the room is full and responds with an appropriate signaling event
@@ -129,6 +125,9 @@ io.on('connection', socket => {
         io.to(user.room).emit('updateOtherGameUsers', {playerID, dieValue});
         // pullCard(cardType, cardAge, client, socket, io);
         // emit info to update player money etc
+        allBalances(client, socket, io);
+        allChildren(client, socket, io);
+        allMarriage(client, socket, io);
     });
 });
 

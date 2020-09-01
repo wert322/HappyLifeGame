@@ -779,10 +779,10 @@ function college(client, socket, io) {
 
 function tabulatePlayers(client, socket, io) {
     let room = getCurrentUser(socket.id).room;
-    const text = 'SELECT username, (20*children+balance) AS totalBalance FROM users WHERE room=$1 ORDER BY alive DESC, totalBalance DESC;';
+    const text = 'SELECT username, (20*children+balance) AS totalBalance FROM users WHERE room= $1 ORDER BY alive DESC, totalBalance DESC;';
     const values = [room];
-    const usernames = [];
-    const balances = [];
+    let usernames = [];
+    let balances = [];
     client
         .query(text, values)
         .then (res => {
@@ -796,7 +796,64 @@ function tabulatePlayers(client, socket, io) {
     io.to(room).emit('finalTabulation', {usernames, balances});
 }
 
-module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser, college, tabulatePlayers};
+function allBalances(client, socket, io) {
+    let room = getCurrentUser(socket.id).room;
+    let usernames = [];
+    let balances = [];
+    const text = 'SELECT balance, username FROM users WHERE room = $1';
+    const values = [room];
+    client
+        .query(text, values)
+        .then (res => {
+            const data = res.rows;
+            data.forEach (row => {
+                usernames.push(row.username);
+                balances.push(row.balance);
+            })
+        })
+        .catch (e => console.error(e.stack));
+    io.to(room).emit('balanceUpdate', {usernames, balances});
+}
+
+function allChildren(client, socket, io) {
+    let room = getCurrentUser(socket.id).room;
+    let usernames = [];
+    let children = [];
+    const text = 'SELECT children, username FROM users WHERE room = $1';
+    const values = [room];
+    client
+        .query(text, values)
+        .then (res => {
+            const data = res.rows;
+            data.forEach (row => {
+                usernames.push(row.username);
+                children.push(row.children);
+            })
+        })
+        .catch (e => console.error(e.stack));
+    io.to(room).emit('childrenUpdate', {usernames, children});
+}
+
+function allMarriage(client, socket, io) {
+    let room = getCurrentUser(socket.id).room;
+    let usernames = [];
+    let partners = [];
+    const text = 'SELECT married, username FROM users WHERE room = $1';
+    const values = [room];
+    client
+        .query(text, values)
+        .then (res => {
+            const data = res.rows;
+            data.forEach (row => {
+                usernames.push(row.username);
+                partners.push(row.married);
+            })
+        })
+        .catch (e => console.error(e.stack));
+    io.to(room).emit('marriageUpdate', {usernames, partners});
+}
+
+module.exports = {pullCard, createCardSet, deleteCardSet, addUser, removeUser, college, tabulatePlayers, allBalances, allChildren, allMarriage};
 
 /*     const text = 'SELECT * FROM '
 client.query('SELECT * FROM bad;', (err, res) => {
