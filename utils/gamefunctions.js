@@ -414,7 +414,7 @@ function standardEvent(eventData, socket, client, io, age) {
     let setType;
     let choicesArray
     let cardDescription = eventData.description;
-    io.to(room).emit('showRegularCard', cardDescription);
+    io.to(room).emit('showRegularCard', {cardDescription, null});
     io.emit
     if (eventData.choice1text !== null && eventData.id !== 'EA6' && eventData.id !== 'EO5') {
         choicesArray = [eventData.choice1text, eventData.choice1, eventData.choice2text, eventData.choice2];
@@ -570,7 +570,7 @@ function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
         }
         moneyUpdate(choice ,'choice', socket, io, client);
     }
-    io.to(room).emit('showRegularChoice', choiceDescription);
+    io.to(room).emit('showRegularOutcome', choiceDescription);
 }
 
 // Takes the ID of the choice and returns the corresponding row as an object
