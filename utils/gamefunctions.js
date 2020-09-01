@@ -862,8 +862,12 @@ function allMarriage(client, socket, io) {
 
 function allTraits(client, socket, io) {
     let room = getCurrentUser(socket.id).room;
+    let traitData;
+    let userTraits;
     let usernames = [];
     let traits = [];
+    let tempTraits = [];
+    let traitDetails = [];
     const text = 'SELECT username, traits FROM users WHERE room = $1';
     const values = [room];
     client
@@ -871,8 +875,17 @@ function allTraits(client, socket, io) {
         .then (res => {
             const data = res.rows;
             data.forEach (row => {
+                tempTraits = [];
                 usernames.push(row.username);
-                traits.push(traits);
+                userTraits = row.traits;
+                userTraits.forEach(element => {
+                    traitDetails = [];
+                    traitData = getTraitDetails(client, element);
+                    traitDetails.push(traitData.name);
+                    traitDetails.push(traitData.description);
+                    tempTraits.push(traitDetails);
+                })
+                traits.push(tempTraits);
             })
         })
         .catch (e => console.error(e.stack));
