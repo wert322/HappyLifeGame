@@ -412,10 +412,10 @@ function standardEvent(eventData, socket, client, io, age) {
     let room = getCurrentUser(socket.id).room;
     let partnerID = getPartner(socket, client, io);
     let setType;
-    let choicesArray
+    let choicesArray;
     let cardDescription = eventData.description;
     io.to(room).emit('showRegularCard', {cardDescription, null});
-    io.emit
+
     if (eventData.choice1text !== null && eventData.id !== 'EA6' && eventData.id !== 'EO5') {
         choicesArray = [eventData.choice1text, eventData.choice1, eventData.choice2text, eventData.choice2];
         socket.emit('twoChoiceEvent', {choicesArray});
