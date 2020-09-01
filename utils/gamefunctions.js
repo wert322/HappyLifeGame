@@ -864,7 +864,7 @@ function allTraits(client, socket, io) {
     let room = getCurrentUser(socket.id).room;
     let usernames = [];
     let traits = [];
-    const text = 'SELECT traits FROM users WHERE room = $1';
+    const text = 'SELECT username, traits FROM users WHERE room = $1';
     const values = [room];
     client
         .query(text, values)
