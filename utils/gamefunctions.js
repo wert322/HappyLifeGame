@@ -614,14 +614,19 @@ async function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
         updateChildren(partnerId, client, input);
         userC = await getCoefficient(client, 'receiving', socket.id) * 0.1 * input;
         partnerC = await getCoefficient(client, 'receiving', socket) * 0.1 * input;
-        roomUsers.forEach(element => {
-            if (element.id !== socket.id && element.id !== partnerID) {
-                thirdC = await getCoefficient(client, 'giving', element.id) * -0.1;
-                updateBalance(client, socket, socket.id, userC, io, false);
-                updateBalance(client, socket, partnerID, partnerC, io, true);
-                updateBalance(client, socket, element.id, thirdC, io, true);
+
+        await Promise.all(roomUsers.map(async (element) => {
+            try {
+                if (element.id !== socket.id && element.id !== partnerID) {
+                    thirdC = await getCoefficient(client, 'giving', element.id) * -0.1;
+                    updateBalance(client, socket, socket.id, userC, io, false);
+                    updateBalance(client, socket, partnerID, partnerC, io, true);
+                    updateBalance(client, socket, element.id, thirdC, io, true);
+                }
+            } catch (error) {
+                console.log(error.stack);
             }
-        });
+        }));
     }  else { //choiceType = 'bookclub'
         if (userTraits.includes('T4') && userTraits.includes('T12')) {
             choice.value = 10;
