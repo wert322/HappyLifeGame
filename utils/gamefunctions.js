@@ -701,7 +701,7 @@ async function getPartner(socket, client, io) {
 // Handles the marriage event. Handles the checking of if they have the distrust trait and if they do, it prevents marriage while also removing those trait cards from their arrays
 async function marriageCard(socket, client, io) {
     socket.emit('getPartnerEvent', {filler: true});
-    socket.on('getPartnerResponse', ({pID}) => {
+    socket.on('getPartnerResponse', async ({pID}) => {
         try {
             var userTraits = await getTraits(client, socket.id);
         } catch (error) {
@@ -788,7 +788,7 @@ async function updateChildren(id, client, children) {
 // Gets the number of children for the given player (ID)
 function getChildren(id, client) {
     const text = 'SELECT children FROM users WHERE id = $1';
-    const values = (id);
+    const values = [id];
     try {
         const res = await client.query(text, values);
         return res.rows[0].children;
