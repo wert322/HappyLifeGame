@@ -702,8 +702,17 @@ async function getPartner(socket, client, io) {
 async function marriageCard(socket, client, io) {
     socket.emit('getPartnerEvent', {filler: true});
     socket.on('getPartnerResponse', ({pID}) => {
-        let userTraits = await getTraits(client, socket.id);
-        let partnerTraits = await getTraits(client, pID);
+        try {
+            let userTraits = await getTraits(client, socket.id);
+        } catch (error) {
+            console.log(error.stack);
+        }
+        try {
+            let partnerTraits = await getTraits(client, pID);
+        } catch (error) {
+            console.log(error.stack);
+        }
+
         if (!userTraits.includes('T2') || !partnerTraits.includes('T2')) {
             updateMarriage(pID, client, io, socket.id);
             updateMarriage(socket.id, client, io, pID);
