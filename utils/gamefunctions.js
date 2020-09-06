@@ -784,7 +784,7 @@ async function getAlive(id, client) {
     const values = [id];
     try {
         const res = await client.query(text, values);
-        retun res.rows[0].alive;
+        return res.rows[0].alive;
     } catch (error) {
         console.log(error.stack);
     }
