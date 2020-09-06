@@ -596,7 +596,7 @@ async function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
         userC = await getCoefficient(client, 'receiving', socket.id) * 0.05;
         partnerC = await getCoefficient(client, 'receiving', partnerID) * 0.05;
 
-        await Promise.all(roomUsers.map(async (elem) => {
+        await Promise.all(roomUsers.map(async (element) => {
             try {
                 if (element.id !== socket.id && element.id !== input) {
                     thirdC = await getCoefficient(client, 'giving', element.id) * -0.05;
@@ -608,7 +608,7 @@ async function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
                 console.log(error.stack);
             }
         }));
-        
+
     } else if (choiceType === 'children') {
         updateChildren(socket.id, client, input);
         updateChildren(partnerId, client, input);
