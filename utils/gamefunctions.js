@@ -595,14 +595,14 @@ async function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
     } else if (choiceType === 'marriage') {
         userC = await getCoefficient(client, 'receiving', socket.id) * 0.05;
         partnerC = await getCoefficient(client, 'receiving', partnerID) * 0.05;
-        roomUsers.forEach(element => {
+        for (const element of roomUsers) {
             if (element.id !== socket.id && element.id !== input) {
                 thirdC = await getCoefficient(client, 'giving', element.id) * -0.05;
                 updateBalance(client, socket, socket.id, userC, io, false);
                 updateBalance(client, socket, input, partnerC, io, true);
                 updateBalance(client, socket, element.id, thirdC, io, true);
             }
-        });
+        }
     } else if (choiceType === 'children') {
         updateChildren(socket.id, client, input);
         updateChildren(partnerId, client, input);
