@@ -703,12 +703,12 @@ async function marriageCard(socket, client, io) {
     socket.emit('getPartnerEvent', {filler: true});
     socket.on('getPartnerResponse', ({pID}) => {
         try {
-            let userTraits = await getTraits(client, socket.id);
+            var userTraits = await getTraits(client, socket.id);
         } catch (error) {
             console.log(error.stack);
         }
         try {
-            let partnerTraits = await getTraits(client, pID);
+            var partnerTraits = await getTraits(client, pID);
         } catch (error) {
             console.log(error.stack);
         }
