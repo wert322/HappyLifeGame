@@ -701,7 +701,7 @@ async function getPartner(socket, client, io) {
 // Handles the marriage event. Handles the checking of if they have the distrust trait and if they do, it prevents marriage while also removing those trait cards from their arrays
 async function marriageCard(socket, client, io) {
     socket.emit('getPartnerEvent', {filler: true});
-    socket.on('getPartnerResponse', ({pID}) => {
+    socket.on('getPartnerResponse', async ({pID}) => {
         try {
             var userTraits = await getTraits(client, socket.id);
         } catch (error) {
