@@ -786,7 +786,7 @@ async function updateChildren(id, client, children) {
 
 // ASYNC
 // Gets the number of children for the given player (ID)
-function getChildren(id, client) {
+async function getChildren(id, client) {
     const text = 'SELECT children FROM users WHERE id = $1';
     const values = [id];
     try {
