@@ -1,6 +1,10 @@
 @import url('https://fonts.googleapis.com/css?family=Roboto&display=swap');
 
-html{overflow-y: scroll; }
+html{
+	overflow-y: scroll;
+	position: relative;
+	min-height: 100%; 
+}
 
 :root {
 	--dark-color-a: #eab0d9;
@@ -20,6 +24,7 @@ html{overflow-y: scroll; }
 body {
 	font-size: 12px;
 	background: var(--light-color);
+	margin-bottom: 100px;
 }
 
 a {
@@ -219,7 +224,7 @@ a {
 
 /* footer */
 .footer-bottom {
-	position: fixed;
+	position: absolute;
 	left: 0;
 	bottom: 0;
 	width: 100%;
