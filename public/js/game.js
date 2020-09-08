@@ -10,7 +10,8 @@ const config = {
         parent: 'gameDiv',
         mode: Phaser.Scale.FIT,
         width: 1600,
-        height: 900
+        height: 900,
+        autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
     },
     backgroundColor: 0xdda0dd,
     scene: [scene1, scene2]

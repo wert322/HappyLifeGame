@@ -139,7 +139,7 @@ a {
 
 /* Game Div */
 #gameDiv {
-	width: 80%;
+	width: 80% !important; 
 	max-width: 1600px;
 	margin: auto;
 }
@@ -288,4 +288,8 @@ a {
 	border-radius: 6px;
 	font-size: 15px;
 	box-shadow: 0px 3px #916686;
+}
+
+canvas {
+	margin:auto;
 }
