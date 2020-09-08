@@ -141,6 +141,7 @@ a {
 #gameDiv {
 	width: 80% !important; 
 	max-width: 1600px;
+	max-height: 900px;
 	margin: auto;
 }
 
