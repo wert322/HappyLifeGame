@@ -92,6 +92,15 @@ io.on('connection', socket => {
         socket.emit('getSizeOutput', {memberCount, roomList});
     });
 
+    // Listens for and returns all users in the room
+    socket.on('getRoomUsers', (filler) => { 
+        const user = getCurrentUser(socket.id);
+        io.to(user.room).emit('roomUsers', {
+            room: user.room,
+            users: getRoomUsers(user.room)
+        });
+    });
+
     // Runs when client disconnects
     socket.on('disconnect', () => {
         const user = userLeave(socket.id);

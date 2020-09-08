@@ -19,7 +19,6 @@ const config = {
         height: canvasHeight,
         autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
     },
-    // backgroundColor: 0xdda0dd,
     backgroundColor: 0xffbfea,
     scene: [scene1, scene2]
 }

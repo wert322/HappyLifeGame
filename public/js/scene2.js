@@ -41,17 +41,17 @@ class scene2 extends Phaser.Scene {
         }
 
         // Game side display
-        this.sideInfo = this.add.rectangle(canvasWidth * 0.875, canvasHeight / 2, canvasWidth / 4, canvasHeight, "0xFFFFFF").setOrigin(0.5);
+        this.sideInfo = this.add.rectangle(canvasWidth * 0.875, 0, canvasWidth / 4, 900, "0xFFFFFF").setOrigin(0.5, 0);
         this.allPlayerInfoText = this.add.container(0, 0);
         for (let i = 0; i < players.length; i++) {
-            let playerInfoText = this.add.text(canvasWidth * 0.75 + 50, 10 + 50 * i, players[i].name, {font: "30px arial", color: "0x000000"}).setOrigin(0);
+            let playerInfoText = this.add.text(canvasWidth * 0.75 + 50, 10 + 50 * i, players[i].name, {font: "30px Roboto", color: "0x000000"}).setOrigin(0);
             this.add.rectangle(canvasWidth * 0.75 + 10, 10 + 50 * i, 30, 30, players[i].playerColor).setOrigin(0);
             this.allPlayerInfoText.add(playerInfoText);
         }
 
         // Game text display
-        this.yourTurnText = this.add.text(canvasWidth / 2, 1000, "Your turn! Press SPACE to roll the die.", {font: "40px arial"}).setOrigin(0.5,1);
-        this.dieRollResult = this.add.text(canvasWidth / 2, 1000, "", {font: "40px arial"}).setOrigin(0.5,1);
+        this.yourTurnText = this.add.text(canvasWidth / 2, 1000, "Your turn! Press SPACE to roll the die.", {font: "40px Roboto"}).setOrigin(0.5,1);
+        this.dieRollResult = this.add.text(canvasWidth / 2, 1000, "", {font: "40px Roboto"}).setOrigin(0.5,1);
 
         // Get roll info from other players in the room
         socket.on('updateOtherGameUsers', ({ playerID, dieValue }) => {
@@ -59,9 +59,9 @@ class scene2 extends Phaser.Scene {
                 this.blankCard.destroy();
                 this.displayLandedCard = false;
             }
+            this.turn = (playerID + 1) % players.length;
             if (playerID != userID) {
                 this.simulateTurn(playerID, dieValue);
-                self.turn = (playerID + 1) % players.length;
             }
         });
     }
@@ -106,7 +106,7 @@ class scene2 extends Phaser.Scene {
             this.boardOffset += 10;
             this.allCardsContainer.x += 10;
         }
-        if (this.keyboard.RIGHT.isDown && this.allCardsContainer.x >= -3900) {
+        if (this.keyboard.RIGHT.isDown && this.allCardsContainer.x >= -3700) {
             this.boardOffset -= 10;
             this.allCardsContainer.x -= 10;
         }
