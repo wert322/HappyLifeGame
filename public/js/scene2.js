@@ -36,27 +36,32 @@ class scene2 extends Phaser.Scene {
         // Add user piece to board in a player container
         this.allPlayersContainer = this.add.container(0, 0);
         for (let i = 0; i < players.length; i++) {
-            let playerPiece = this.add.rectangle(0, 0, 50, 50, players[i].playerColor);
+            let playerPiece = this.add.rectangle(this.cardList[0].xpos, this.cardList[0].ypos, 50, 50, players[i].playerColor);
             this.allPlayersContainer.add(playerPiece);
         }
 
         // Game side display
-        this.sideInfo = this.add.rectangle(1400, 450, 400, 900, "0xFFFFFF");
+        this.sideInfo = this.add.rectangle(canvasWidth * 0.875, canvasHeight / 2, canvasWidth / 4, canvasHeight, "0xFFFFFF").setOrigin(0.5);
         this.allPlayerInfoText = this.add.container(0, 0);
         for (let i = 0; i < players.length; i++) {
-            let playerInfoText = this.add.text(1250, 10 + 50 * i, players[i].name, {font: "30px arial", color: "0x000000"}).setOrigin(0);
-            this.add.rectangle(1210, 10 + 50 * i, 30, 30, players[i].playerColor).setOrigin(0);
+            let playerInfoText = this.add.text(canvasWidth * 0.75 + 50, 10 + 50 * i, players[i].name, {font: "30px arial", color: "0x000000"}).setOrigin(0);
+            this.add.rectangle(canvasWidth * 0.75 + 10, 10 + 50 * i, 30, 30, players[i].playerColor).setOrigin(0);
             this.allPlayerInfoText.add(playerInfoText);
         }
 
         // Game text display
-        this.yourTurnText = this.add.text(config.scale.width/2, 900, "Your turn! Press SPACE to roll the die.", {font: "40px arial"}).setOrigin(0.5,1);
-        this.dieRollResult = this.add.text(config.scale.width/2, 900, "", {font: "40px arial"}).setOrigin(0.5,1);
+        this.yourTurnText = this.add.text(canvasWidth / 2, 1000, "Your turn! Press SPACE to roll the die.", {font: "40px arial"}).setOrigin(0.5,1);
+        this.dieRollResult = this.add.text(canvasWidth / 2, 1000, "", {font: "40px arial"}).setOrigin(0.5,1);
 
         // Get roll info from other players in the room
         socket.on('updateOtherGameUsers', ({ playerID, dieValue }) => {
+            if (this.displayingCard) {
+                this.blankCard.destroy();
+                this.displayLandedCard = false;
+            }
             if (playerID != userID) {
                 this.simulateTurn(playerID, dieValue);
+                self.turn = (playerID + 1) % players.length;
             }
         });
     }
@@ -107,7 +112,7 @@ class scene2 extends Phaser.Scene {
         }
 
         // Press space on your turn to roll die and move forward
-        if (this.keyboard.SPACE.isDown && (this.turn === userID)) {
+        if (this.keyboard.SPACE.isDown && (this.turn === userID) && !this.displayingCard) {
             var dieValue = this.rollDie();
             if (players[userID].location + dieValue >= 100) {
                 players[userID].location = 100;
@@ -198,7 +203,6 @@ class scene2 extends Phaser.Scene {
         var landedCardIndex = this.getLandedCardIndex(newPlayerLocation);
         //this.moveUserPiece(playerID, dieValue, newPlayerLocation);
         this.displayLandedCard(landedCardIndex);
-        this.turn = (playerID + 1) % players.length;
     }
 
     // displays the card at inputted index
@@ -207,11 +211,6 @@ class scene2 extends Phaser.Scene {
         this.allCardsContainer.bringToTop(card);
         this.displayingCard = true;
         this.animateLandedCard(card);
-        // card.setX(800 - this.boardOffset);
-        // card.setY(450);
-        // card.setScale(1);
-        // card.setAngle(0);
-        //this.hideDisplayCardEvent = this.time.addEvent({ delay: 3000, callback: this.hideDisplayCard, callbackScope: this });
     }
 
     // animation to move card to center of screen
@@ -251,10 +250,10 @@ class scene2 extends Phaser.Scene {
 
     flipLandedCard2(tween, targets, self) {
         self.allCardsContainer.last.destroy();
-        self.goalCard = self.add.sprite(600 - self.boardOffset, 450, 'cardBlank').setOrigin(0.5);
-        self.goalCard.scaleX = 0;
+        self.blankCard = self.add.sprite(600 - self.boardOffset, 450, 'cardBlank').setOrigin(0.5);
+        self.blankCard.scaleX = 0;
         self.tweens.add({
-            targets: self.goalCard,
+            targets: self.blankCard,
             props: {
                 scaleX: 1
             },
@@ -267,17 +266,11 @@ class scene2 extends Phaser.Scene {
     }
 
     cardAnimationEnd(tween, targets, self) {
-        self.goalCard.setInteractive();
-        self.goalCard.on('pointerdown', function() {
-            self.goalCard.destroy();
+        self.blankCard.setInteractive();
+        self.blankCard.on('pointerdown', function() {
+            self.blankCard.destroy();
             self.displayingCard = false;
         });
-    }
-
-    // hides the card the player landed on
-    hideDisplayCard() {
-        this.allCardsContainer.last.destroy();
-        this.displayingCard = false;
     }
 
     // returns the container index of the landed card

@@ -9,21 +9,39 @@ class scene1 extends Phaser.Scene {
 
     create() {
         // Text used in start screen
-        this.add.text(config.scale.width/2, 100, "Happy Life Game", {font: "128px Georgia"}).setOrigin(0.5);
-        this.add.text(config.scale.width/2, 800, "Press space to start", {font: "48px Georgia"}).setOrigin(0.5);
+        this.title = this.add.text(canvasWidth / 2, 100, "Happy Life Game", {font: "128px Georgia", align: "center"}).setOrigin(0.5);
+        this.add.text(canvasWidth / 2, canvasHeight - 100, "Click to start", {font: "48px Georgia", align: "center"}).setOrigin(0.5);
 
-        // Keyboard inputs
-        this.keyboard = this.input.keyboard.addKeys("SPACE");
+        // this.add.sprite(150, 100, "logo").setOrigin(0.5).setScale(0.25);
 
         // Update player list when room users changes
         socket.on('roomUsers', ({ room, users }) => {
             this.updatePlayerList(users);
         });
+
+        // Display users in the room
+        this.add.rectangle(canvasWidth / 2, canvasHeight / 2, canvasWidth / 2, canvasHeight / 2, "0xffffff").setOrigin(0.5);
+        // Container for users
+        this.allUserInfoText = this.add.container(0, 0);
+        for (let i = 0; i < 6; i++) {
+            this.add.rectangle(530 + 450 * (i % 2), 320 + 200 * Math.round((i - 1) / 2), 50, 50, colors[i]).setOrigin(0.5);
+            let userText = this.add.text(580 + 450 * (i % 2), 320 + 200 * Math.round((i - 1) / 2), "", {font: "50px arial", color: "#111111"}).setOrigin(0, 0.5);
+            this.allUserInfoText.add(userText);
+        }
     }
 
     update() {
-        if (this.keyboard.SPACE.isDown && players.length >= 2) {
+        if (this.input.activePointer.isDown && players.length >= 2) {
+            // add emit to lock the room here
             this.scene.start("playGame");
+        }
+        for (let i = 0; i < 6; i++) {
+            let userText = this.allUserInfoText.getAt(i);
+            if (i < players.length) {
+                userText.setText(players[i].name);
+            } else {
+                userText.setText("");
+            }
         }
     }
 
@@ -40,20 +58,7 @@ class scene1 extends Phaser.Scene {
             players.pop();
         }
         for (let i = 0; i < users.length; i++) {
-            var color = "";
-            if (i === 0) {
-                color = "0xFF5757"; // red
-            } else if (i === 1) {
-                color = "0xFF9C57"; // orange
-            } else if (i === 2) {
-                color = "0xFFF4B7"; // yellow
-            } else if (i === 3) {
-                color = "0xE2F0CB"; // green
-            } else if (i === 4) {
-                color = "0x85EAD7"; // light blue
-            } else { // if i === 5
-                color = "0xC7CEEA"; // blue
-            }
+            var color = colors[i];
             if (users[i].username === username) {
                 userID = i;
             }
