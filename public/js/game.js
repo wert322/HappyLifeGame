@@ -16,7 +16,8 @@ const config = {
         parent: 'gameDiv',
         mode: Phaser.Scale.FIT,
         width: canvasWidth,
-        height: canvasHeight
+        height: canvasHeight,
+        autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
     },
     // backgroundColor: 0xdda0dd,
     backgroundColor: 0xffbfea,
