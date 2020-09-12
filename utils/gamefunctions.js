@@ -15,8 +15,8 @@ async function pullCard(cardtype, age, client, socket, io) {
     
     let currentUser = getCurrentUser(socket.id);
     let room = currentUser.room;
-    let cardDescription = new Text;
-    let iconCode = new Text;
+    let cardDescription;
+    let iconCode;
 
     if (cardtype === 'good') {
         const text = 'SELECT * FROM good WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
@@ -310,7 +310,7 @@ async function getBalance(client, id) {
 // ASYNC
 // Gets the coefficient for the specific column from the specified user
 async function getCoefficient(client, header, id) {
-    let text = 'SELECT $1 FROM users WHERE id = $1 LIMIT 1';
+
     const values = [id];
 
     if (header === 'receiving') {
@@ -451,7 +451,13 @@ async function getCardSet(socket, client, setType) {
     const values = [setType, room];
     try {
         let res = await client.query(text, values);
-        return res.rows[0].setType;
+        if (setType === 'eventadult') {
+            return res.rows[0].eventadult;
+        } else if (setType === 'eventold') {
+            return res.rows[0].eventold;
+        } else {
+            return res.rows[0].remainder;
+        }
     } catch (error) {
         console.log(error);
     }

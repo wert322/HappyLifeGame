@@ -44,7 +44,7 @@ a {
 /* Chat */
 .chat-container {
 	width: 80%;
-	max-width: 1600px;
+	max-width: 1920px;
 	margin: 30px auto;
 	margin-bottom: 0px;
 	background: #fff;
@@ -140,8 +140,8 @@ a {
 /* Game Div */
 #gameDiv {
 	width: 80% !important; 
-	max-width: 1600px;
-	max-height: 900px;
+	max-width: 1920px;
+	max-height: 1080px;
 	margin: auto;
 }
 

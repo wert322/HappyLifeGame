@@ -10,6 +10,8 @@ const colors = ["0xFF5757", "0xFF9C57", "0xFFF4B7", "0xE2F0CB", "0x85EAD7", "0xC
 
 var userID = -1; // user ID
 
+const rollInfo = {playerID: -1, roll: -1}; // stores the roll info
+
 const config = {
     type: Phaser.AUTO,
     scale: {

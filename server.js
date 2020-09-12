@@ -132,11 +132,11 @@ io.on('connection', socket => {
     socket.on('gameTurn', ({playerID, dieValue, cardType, cardAge}) => {
         const user = getCurrentUser(socket.id);
         io.to(user.room).emit('updateOtherGameUsers', {playerID, dieValue});
-        // pullCard(cardType, cardAge, client, socket, io);
+        pullCard(cardType, cardAge, client, socket, io);
         // emit info to update player money etc
         allBalances(client, socket, io);
         allChildren(client, socket, io);
-        allMarriage(client, socket, io);
+        // allMarriage(client, socket, io);
     });
 
     // Listens for game end
