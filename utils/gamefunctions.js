@@ -3,16 +3,19 @@ const { userJoin, getCurrentUser, userLeave, getRoomUsers } = require('./users')
 // ASYNC
 // Takes the type of card and age zone, does the proper updates to the user's data, and emits the proper information to display the card
 async function pullCard(cardtype, age, client, socket, io) {
-    let promise1 = getPartner(socket, client, io);
-    let promise2 = getCardSet(socket, client, 'remainder');
-    let promise3 = getCardSet(socket, client,'eventadult');
-    let promise4 = getCardSet(socket, client, 'eventold');
+    let promise1 =  getPartner(socket, client, io);
+    let promise2 =  getCardSet(socket, client, 'remainder');
+    let promise3 =  getCardSet(socket, client,'eventadult');
+    let promise4 =  getCardSet(socket, client, 'eventold');
 
     let partnerID = await promise1;
     let remainderDiscards = await promise2;
     let eventadultDiscards = await promise3;
     let eventoldDiscards = await promise4;
-    
+        
+    console.log(partnerID + '1' + remainderDiscards+ '2' + eventadultDiscards + '3' + eventoldDiscards);
+    console.log('test');
+
     let currentUser = getCurrentUser(socket.id);
     let room = currentUser.room;
     let cardDescription;
@@ -84,7 +87,9 @@ async function pullCard(cardtype, age, client, socket, io) {
         }
     } else {
         let marriedCount = await getMarriedCount(socket, client);
+        console.log('marriedCount' + marriedCount);
         let totalCount = getRoomUsers(getCurrentUser(socket.id).room).length;
+        console.log('total Users ' + totalCount);
         let combinedDiscards = remainderDiscards;
         if (partnerID === null) {
             combinedDiscards.concat(['EA1', 'EA2', 'EO1', 'EO2']);
@@ -101,6 +106,7 @@ async function pullCard(cardtype, age, client, socket, io) {
             eventoldDiscards = [];
         }
         combinedDiscards = combinedDiscards.concat(eventadultDiscards).concat(eventoldDiscards);
+        console.log('Error point yes?');
         const text = 'SELECT * FROM events WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
         const values = [age, combinedDiscards];
         try {
@@ -442,13 +448,13 @@ async function getCardSet(socket, client, setType) {
     let room = getCurrentUser(socket.id).room;
     let text;
     if (setType === 'eventadult') {
-        text = 'SELECT eventadult FROM cardsets WHERE roomname = $2 LIMIT 1';
+        text = 'SELECT eventadult FROM cardsets WHERE roomname = $1 LIMIT 1';
     } else if (setType === 'eventold') {
-        text = 'SELECT eventold FROM cardsets WHERE roomname = $2 LIMIT 1';
+        text = 'SELECT eventold FROM cardsets WHERE roomname = $1 LIMIT 1';
     } else {
-        text = 'SELECT remainder FROM cardsets WHERE roomname = $2 LIMIT 1';
+        text = 'SELECT remainder FROM cardsets WHERE roomname = $1 LIMIT 1';
     }
-    const values = [setType, room];
+    const values = [room];
     try {
         let res = await client.query(text, values);
         if (setType === 'eventadult') {
@@ -471,6 +477,7 @@ async function standardEvent(eventData, socket, client, io, age) {
     let setType;
     let choicesArray;
     let cardDescription = eventData.description;
+    console.log('card description ' + cardDescription);
     io.to(room).emit('showRegularCard', {cardDescription});
 
     if (eventData.choice1text !== null && eventData.id !== 'EA6' && eventData.id !== 'EO5') {
@@ -697,7 +704,7 @@ async function getPartner(socket, client, io) {
     const values = [playerID];
     try {
         const res = await client.query(text, values);
-        return res.row[0].married;
+        return res.rows[0].married;
     } catch (error) {
         console.log(error.stack);
     }
@@ -748,7 +755,7 @@ async function getMarriedCount(socket, client) {
     const values = [currentRoom];
     try {
         const res = await client.query(text, values);
-        return res.row[0].count;
+        return res.rows[0].count;
     } catch (error) {
         console.log(error.stack);
     }
