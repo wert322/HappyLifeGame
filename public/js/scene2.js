@@ -59,28 +59,32 @@ class scene2 extends Phaser.Scene {
         }
 
         // Card icon display
-        this.cardIcon = this.add.text(720, 450, "", {font: "100px"}).setOrigin(0.5);
+        this.cardIcon = this.add.text(720, 450, "", {font: "500px fontAwesome", fill: '#000000'}).setOrigin(0.5);
+        this.cardIcon.depth = 1;
 
         // Get roll info from other players in the room
         socket.on('updateOtherGameUsers', ({ playerID, dieValue }) => {
             if (this.displayingCard) {
                 this.blankCard.destroy();
+                this.cardIcon.setText("");
                 this.displayLandedCard = false;
             }
             rollInfo.playerID = playerID;
             rollInfo.roll = dieValue;
+            if (playerID === userID) {
+                this.textBox.setText("You rolled a " + dieValue + "!");
+            } else {
+                this.textBox.setText(players[playerID].name + " rolled a " + dieValue + "!");
+            }
         });
 
         // 
         socket.on('showRegularCard', ({cardDescription, iconCode}) => {
-            if (rollInfo.playerID != this.turn) {
-                throw 'Game timings have glitched. Please restart.';
-            } else {
-                this.simulateTurn(rollInfo.playerID, rollInfo.roll, cardDescription, iconCode);
-                this.turn = (playerID + 1) % players.length;
-                if (userID === this.turn) {
-                    this.textBox.setText("Your turn! Press SPACE to roll the die.");
-                }
+            console.log(iconCode); // ERROR: currently prints out undefined
+            // iconCode = '\uf368 '; // temp testing
+            this.simulateTurn(rollInfo.playerID, rollInfo.roll, cardDescription, iconCode);
+            if (userID != rollInfo.playerID) {
+                this.turn = (rollInfo.playerID + 1) % players.length;
             }
         });
     }
@@ -129,6 +133,7 @@ class scene2 extends Phaser.Scene {
 
         // Press space on your turn to roll die and move forward
         if (this.keyboard.SPACE.isDown && (this.turn === userID) && !this.displayingCard) {
+            this.turn = (userID + 1) % players.length;
             var dieValue = this.rollDie();
             if (players[userID].location + dieValue >= 100) {
                 players[userID].location = 100;
@@ -217,18 +222,19 @@ class scene2 extends Phaser.Scene {
         this.cardList[newPlayerLocation].landed = true;
         var landedCardIndex = this.getLandedCardIndex(newPlayerLocation);
         //this.moveUserPiece(playerID, dieValue, newPlayerLocation);
-        this.displayLandedCard(landedCardIndex);
+        this.displayLandedCard(landedCardIndex, cardDescription, iconCode);
     }
 
     // displays the card at inputted index
-    displayLandedCard(index) {
+    displayLandedCard(index, cardDescription, iconCode) {
         let card = this.allCardsContainer.getAt(index);
         this.allCardsContainer.bringToTop(card);
-        this.animateLandedCard(card);
+        this.animateLandedCard(card, cardDescription, iconCode);
     }
 
     // animation to move card to center of screen
-    animateLandedCard(card) {
+    animateLandedCard(card, cardDescription, iconCode) {
+        card.depth = 1;
         var self = this;
         this.tweens.add({
             targets: card,
@@ -243,11 +249,11 @@ class scene2 extends Phaser.Scene {
             yoyo: false,
             repeat: 0,
             onComplete: this.flipLandedCard,
-            onCompleteParams: [self, card]
+            onCompleteParams: [self, card, cardDescription, iconCode]
         });
     }
 
-    flipLandedCard(tween, targets, self, card) {
+    flipLandedCard(tween, targets, self, card, cardDescription, iconCode) {
         self.tweens.add({
             targets: card,
             props: {
@@ -255,35 +261,48 @@ class scene2 extends Phaser.Scene {
             },
             delay: 250,
             duration: cardFlipTime / 2,
-            yoyo: false,
-            repeat: 0,
             onComplete: self.flipLandedCard2,
-            onCompleteParams: [self]
+            onCompleteParams: [self, cardDescription, iconCode]
         });
     }
 
-    flipLandedCard2(tween, targets, self) {
+    flipLandedCard2(tween, targets, self, cardDescription, iconCode) {
         self.displayingCard = true;
         self.allCardsContainer.last.destroy();
         self.blankCard = self.add.sprite(600 - self.boardOffset, 450, 'cardBlank').setOrigin(0.5);
+        self.cardIcon.setText(iconCode);
+        self.cardIcon.depth = 2;
+        self.cardIcon.scaleX = 0;
         self.blankCard.scaleX = 0;
+        self.tweens.add({
+            targets: self.cardIcon,
+            props: {
+                scaleX: 1
+            },
+            duration: cardFlipTime / 2,
+        });
         self.tweens.add({
             targets: self.blankCard,
             props: {
                 scaleX: 1
             },
             duration: cardFlipTime / 2,
-            yoyo: false,
-            repeat: 0,
             onComplete: self.cardAnimationEnd,
-            onCompleteParams: self
+            onCompleteParams: [self, cardDescription]
         });
     }
 
-    cardAnimationEnd(tween, targets, self) {
+    cardAnimationEnd(tween, targets, self, cardDescription) {
+        self.textBox.setText(cardDescription);
         self.blankCard.setInteractive();
         self.blankCard.on('pointerdown', function() {
+            self.cardIcon.setText("");
             self.blankCard.destroy();
+            if (userID === this.turn) {
+                this.textBox.setText("Your turn! Press SPACE to roll the die.");
+            } else {
+                self.textBox.setText("");
+            }
             self.displayingCard = false;
         });
     }
@@ -301,16 +320,6 @@ class scene2 extends Phaser.Scene {
 
     // rolls a die and returns the value (1 to 6)
     rollDie() {
-        let result = Math.floor(Math.random() * 6 + 1);
-        this.textBox.setText("You rolled a " + result + "!");
-        // this.dieRollResult.setText("You rolled a " + result);
-        // this.dieRollResult.visible = true;
-        // this.time.addEvent({ delay: 1000, callback: this.hideDieRollResult, callbackScope: this });
-        return result;
-    }
-
-    // hides the die roll result text
-    hideDieRollResult() {
-        this.dieRollResult.visible = false;
+        return Math.floor(Math.random() * 6 + 1);
     }
 }

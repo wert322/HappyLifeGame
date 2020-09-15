@@ -22,6 +22,7 @@ class scene1 extends Phaser.Scene {
 
         // Update player list when room users changes
         socket.on('roomUsers', ({ room, users }) => {
+            this.sys.game.scale.setGameSize(canvasWidth, canvasHeight);
             this.updatePlayerList(users);
         });
 
@@ -34,8 +35,6 @@ class scene1 extends Phaser.Scene {
             let userText = this.add.text(580 + 450 * (i % 2), 320 + 200 * Math.round((i - 1) / 2), "", {font: "50px Roboto", color: "#111111"}).setOrigin(0, 0.5);
             this.allUserInfoText.add(userText);
         }
-
-        this.sys.game.scale.setGameSize(canvasWidth, canvasHeight);
         
         var self = this;
         this.startButton.setInteractive();
@@ -53,9 +52,9 @@ class scene1 extends Phaser.Scene {
     }
 
     update() {
-        if (players.length === 0) {
-            socket.emit("getRoomUsers", true);
-        }
+        // if (players.length === 0) {
+        //     socket.emit("getRoomUsers", true);
+        // }
         for (let i = 0; i < 6; i++) {
             let userText = this.allUserInfoText.getAt(i);
             if (i < players.length) {
