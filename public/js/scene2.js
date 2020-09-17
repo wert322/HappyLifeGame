@@ -139,10 +139,10 @@ class scene2 extends Phaser.Scene {
                 players[userID].location = 100;
                 socket.emit('gameEnd', (true));
             } else { // game has not ended yet, so run a turn
-                let index = this.getLandedCardIndex(players[userID].location + dieValue);
+                let location = this.getLandedCardLocation(players[userID].location, dieValue);
                 let playerID = userID;
-                let cardType = this.cardList[index].type;
-                let cardAge = this.cardList[index].age;
+                let cardType = this.cardList[location].type;
+                let cardAge = this.cardList[location].age;
                 socket.emit('gameTurn', ({playerID, dieValue, cardType, cardAge}));
             }
         }
@@ -211,14 +211,8 @@ class scene2 extends Phaser.Scene {
 
     // acts out a turn given inputted player and roll amount
     simulateTurn(playerID, dieValue, cardDescription, iconCode) {
-        let counter = dieValue;
-        while (counter > 0) {
-            if (!this.cardList[players[playerID].location + 1].landed) {
-                counter--;
-            }
-            players[playerID].location++;
-        }
-        var newPlayerLocation = players[playerID].location;
+        var newPlayerLocation = this.getLandedCardLocation(players[playerID].location, dieValue);
+        players[playerID].location = newPlayerLocation;
         this.cardList[newPlayerLocation].landed = true;
         var landedCardIndex = this.getLandedCardIndex(newPlayerLocation);
         //this.moveUserPiece(playerID, dieValue, newPlayerLocation);
@@ -307,7 +301,7 @@ class scene2 extends Phaser.Scene {
         });
     }
 
-    // returns the container index of the landed card
+    // returns the container index of the landed card in reference to the remaining cards
     getLandedCardIndex(cardLocation) {
         let counter = 1;
         for (let i = 1; i < cardLocation; i++) {
@@ -316,6 +310,17 @@ class scene2 extends Phaser.Scene {
             }
         }
         return counter;
+    }
+
+    // returns the location of the landed card in reference to all the cards
+    getLandedCardLocation(location, dieRoll) {
+        while (dieRoll > 0) {
+            if (!this.cardList[location + 1].landed) {
+                dieRoll--;
+            }
+            location++;
+        }
+        return location;
     }
 
     // rolls a die and returns the value (1 to 6)
