@@ -22,7 +22,7 @@ class scene2 extends Phaser.Scene {
     create() {
         // debug tools
         this.debugText = this.add.text(0, 0, "", {font: "20px Roboto"}).setOrigin(0);
-        this.debugText.visible = true;
+        this.debugText.visible = debugMode;
 
         // Set up cards
         this.cardList = this.setupCards();
