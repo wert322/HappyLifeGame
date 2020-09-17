@@ -4,6 +4,9 @@ const { userJoin, getCurrentUser, userLeave, getRoomUsers } = require('./users')
 // ASYNC
 // Takes the type of card and age zone, does the proper updates to the user's data, and emits the proper information to display the card
 async function pullCard(cardtype, age, client, socket, io) {
+    
+    console.log('');
+
     if (cardtype === 'Misfortune') {
         cardtype = 'bad';
     } else if (cardtype === 'Lucky') {
@@ -11,7 +14,13 @@ async function pullCard(cardtype, age, client, socket, io) {
     } else {
         cardtype = 'event';
     }
-    console.log(cardtype);
+
+    if (age === 'OldAge') {
+        age ='Old';
+    }
+
+    console.log('Card type: '+ cardtype + '. Card age: ' + age + '. In gamefunctions.');
+ 
     let promise1 =  getPartner(socket, client, io);
     let promise2 =  getCardSet(socket, client, 'remainder');
     let promise3 =  getCardSet(socket, client,'eventadult');
@@ -21,9 +30,8 @@ async function pullCard(cardtype, age, client, socket, io) {
     let remainderDiscards = await promise2;
     let eventadultDiscards = await promise3;
     let eventoldDiscards = await promise4;
-        
-    console.log(partnerID + '1' + remainderDiscards+ '2' + eventadultDiscards + '3' + eventoldDiscards);
-    console.log('test');
+
+    console.log('Partner ID: ' + partnerID + ', Remainder Discards: ' + remainderDiscards+ ', Adult Discards: ' + eventadultDiscards + ', Old Discards: ' + eventoldDiscards);
 
     let currentUser = getCurrentUser(socket.id);
     let room = currentUser.room;
@@ -36,35 +44,29 @@ async function pullCard(cardtype, age, client, socket, io) {
         try {
             const res = await client.query(text, values);
             let goodData = res.rows[0];
-            console.log(goodData); 
-            
+            console.log(goodData);
+
             cardDescription = goodData.description;
             iconCode = goodData.icon;
             io.to(room).emit('showRegularCard', {cardDescription, iconCode});
 
             if (goodData.traitcard === 2) {
                 doubleTraits(socket, io, client);
-                console.log(1);
             } else {
                 if (goodData.mobility) {
-                    goodMobility(goodData, socket, io);
-                    console.log(2);
+                    goodMobility(goodData, socket, io, client);
                 }
                 if (goodData.traitcard === 1) {
                     giveTrait(goodData.trait, socket.id, io, client);
-                    console.log(3); //Working
                     if (partnerID !== null) {
                         giveTrait(goodData.trait, partnerID, io, client);
-                        console.log(4);
                     }
                 }
                 if (goodData.money) {
                     moneyUpdate(goodData, 'good', socket, io, client);
-                    console.log(5); //Not working
                 } 
             }
             discardCard(goodData, socket, client, 'remainder');
-            console.log(6); //Working
         } catch (err) {
             console.log(err.stack);
             console.log(query.text);
@@ -83,47 +85,43 @@ async function pullCard(cardtype, age, client, socket, io) {
 
             if (badData.id === 'BC1' || badData.id === 'BA5') {
                 suddenDeath(badData, socket, client, io, socket.id);
-                console.log(1); //Bad
             } else if (badData.id === 'BC5'){
                     kidnapping(badData, socket, client, io);
-                    console.log(2);
             } else {
                 if (badData.traitcard) {
                     giveTrait(badData.trait, socket.id, io, client);
-                    console.log(3); //Good
                     if (partnerID !== null) {
                         giveTrait(badData.trait, partnerID, io, client);
-                        console.log(4);
                     }
                 }
                 if (badData.loseturn) {
-                    loseTurn(socket, io, client);
-                    console.log(5);
+                    loseTurn(socket, client, io);
                 }
                 if (badData.money) {
                     moneyUpdate(badData,'bad', socket, io, client);
-                    console.log(6); //Not working
                 } 
             }  
             discardCard(badData, socket, client, 'remainder');
-            console.log(7); //Good
         } catch (err) {
             console.log(err.stack);
             console.log(query.text);
         }
     } else {
         let marriedCount = await getMarriedCount(socket, client);
-        console.log('marriedCount' + marriedCount);
+        console.log('Number of married users: ' + marriedCount);
+
         let totalCount = getRoomUsers(getCurrentUser(socket.id).room).length;
-        console.log('total Users ' + totalCount);
+        console.log('Total room users: ' + totalCount);
+
         let combinedDiscards = remainderDiscards;
+
         if (partnerID === null) {
-            combinedDiscards.concat(['EA1', 'EA2', 'EO1', 'EO2']);
+            combinedDiscards = combinedDiscards.concat(['EA1', 'EA2', 'EO1', 'EO2']);
             if (totalCount - marriedCount < 2) {
-                combinedDiscards.concat(['EA3', 'EO3']);
+                combinedDiscards = combinedDiscards.concat(['EA3', 'EO3']);
             }
         } else {
-            combinedDiscards.concat(['EA3', 'EO3']);
+            combinedDiscards = combinedDiscards.concat(['EA3', 'EO3']);
         }
         if (eventadultDiscards.length === 8) {
             eventadultDiscards = [];
@@ -132,26 +130,27 @@ async function pullCard(cardtype, age, client, socket, io) {
             eventoldDiscards = [];
         }
         combinedDiscards = combinedDiscards.concat(eventadultDiscards).concat(eventoldDiscards);
-        console.log('Error point yes?');
+        console.log('Combined discards: ' + combinedDiscards);
+
         const text = 'SELECT * FROM events WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
         const values = [age, combinedDiscards];
         try {
             const res = await client.query(text, values);
             let eventData = res.rows[0];
             standardEvent(eventData, socket, client, io, age);
-
         } catch (error) {
             console.log(error.stack);
         }
     }
 }
 
+// ASYNC
 // For good cards that have traits = 2
-function doubleTraits(socket, io, client) {
+async function doubleTraits(socket, io, client) {
     let result = Math.floor(Math.random() * 6 + 1);
     
     let currentUser = getCurrentUser(socket.id);
-    let partnerID = getPartner(socket, client, io);
+    let partnerID = await getPartner(socket, client, io);
     let room = currentUser.room;
     
     let cardChoice;
@@ -180,6 +179,7 @@ async function giveTrait(traitID, id, io, client) {
     let room = getCurrentUser(id).room;
 
     if (!userTraits.includes(traitID)) {
+        console.log('Trait given: ' + traitID);
         userTraits.push(traitID);
         updateTraits(userTraits, client, id, traitID);
     } else {
@@ -240,6 +240,7 @@ async function getTraits(client, id) {
     const values = [id];
     try {
         const res = await client.query(text, values);
+        console.log('Given user traits: ' + res.rows[0].traits);
         return res.rows[0].traits;
     } catch (error) {
         console.log(error.stack);
@@ -266,24 +267,21 @@ async function moneyUpdate(cardData, type, socket, io, client) {
     
     let coefficient;
     let value = cardData.value;
-    console.log(room + value + 'moneyUpdate');
+    console.log('Money update. Room: ' + room + '. Value: ' + value + '.');
     try {
         if (type === 'good') {
             coefficient = await getCoefficient(client, 'earning', socket.id);
-            console.log(coefficient);
             value *= coefficient;
-            console.log(value);
             if (cardData.rolldice) {
                 let result = Math.floor(Math.random() * 6 + 1);
                 value *= result;
                 let resultPhrase = 'You rolled a ' + result + ', and received ' + value + ' million yen as a result.';
                 io.to(room).emit('showRegularOutcome', {resultPhrase});
             } 
-            console.log(value);
+            console.log('Earning Coefficient: ' + coefficient + ', Final value: ' + value);
             updateBalance(client, socket, socket.id, value, io, false);
         } else if (type === 'bad') {
             coefficient = await getCoefficient(client, 'penalty', socket.id);
-            console.log(coefficient);
             if (cardData.percent) {
                 value = 1 - value;
                 value *= coefficient;
@@ -293,7 +291,7 @@ async function moneyUpdate(cardData, type, socket, io, client) {
                 value *= coefficient;
             }
             value *= -1;
-            console.log(value);
+            console.log('Earning Coefficient: ' + coefficient + ', Final value: ' + value);
             updateBalance(client, socket, socket.id, value, io, false);
         } else { // Type: choice
             if (value < 0) {
@@ -301,9 +299,8 @@ async function moneyUpdate(cardData, type, socket, io, client) {
             } else {
                 coefficient = await getCoefficient(client, 'earning', socket.id);
             }
-            console.log(coefficient);
             value *= coefficient;
-            console.log(value);
+            console.log('Earning Coefficient: ' + coefficient + ', Final value: ' + value);
             updateBalance(client, socket, socket.id, value, io, false);
         } 
     } catch (err) {
@@ -316,11 +313,10 @@ async function moneyUpdate(cardData, type, socket, io, client) {
 async function updateBalance(client, socket, id, sumvalue, io, ignore) {
     try {
         let balance = await getBalance(client, id);
-        console.log(balance + ' balance' + typeof balance);
-        console.log(typeof sumvalue);
-        let partnerID = getPartner(socket, client, io);
+        console.log('Current balance: ' + balance + '. Value to be added: ' + sumvalue);
+        let partnerID = await getPartner(socket, client, io);
         balance += sumvalue;
-        console.log(balance + ' balance after adding value' + typeof balance);
+        console.log('New balance: ' + balance);
         let text = 'UPDATE users SET balance = $1 WHERE id = $2';
         let values = [balance, id];
         client
@@ -394,9 +390,10 @@ function updateCoefficient(client, header, id, value) {
         .catch(e => console.error(e.stack));
 }
 
+// ASYNC
 // Used for good mobility cards, which add a few extra spaces to the next turn
-function goodMobility(goodData, socket, io) {
-    let partnerID = getPartner(socket, client, io);
+async function goodMobility(goodData, socket, io, client) {
+    let partnerID = await getPartner(socket, client, io);
     var squaresNumber = goodData.squares;
     socket.emit('addSpacesNext', {tempSquares});
     if (partnerID !== null) {
@@ -461,9 +458,10 @@ async function kidnapping(badData, socket, client, io) {
     io.to(room).emit('showRegularOutcome', {resultPhrase});
 }
 
+// ASYNC
 // Emits event that the player should lose their next turn. Currently just emits hardcoded 1 turn, but can be changed to be dynamic
-function loseTurn(socket, client, io) {
-    let partnerID = getPartner(socket, client, io);
+async function loseTurn(socket, client, io) {
+    let partnerID = await getPartner(socket, client, io);
     socket.emit('loseNextTurn', {turns: 1});
     if (partnerID !== null) {
         socket.to(partnerID).emit('lostNextTurn', {turns: 1});
@@ -477,6 +475,7 @@ async function discardCard(tempRow, socket, client, setType) {
         let currentRoom = getCurrentUser(socket.id).room;
         var discards = await getCardSet(socket, client, setType);
         discards.push(tempRow.id);
+        console.log('Card discarded: ' + tempRow.id);
         if (tempRow.age === 'Child') {
             var text = 'UPDATE cardsets SET remainder = $1 WHERE roomname = $2';
         } else if (tempRow.age === 'Adult') {
@@ -499,6 +498,7 @@ async function discardCard(tempRow, socket, client, setType) {
 async function getCardSet(socket, client, setType) {
     let room = getCurrentUser(socket.id).room;
     let text;
+    let cardset;
     if (setType === 'eventadult') {
         text = 'SELECT eventadult FROM cardsets WHERE roomname = $1 LIMIT 1';
     } else if (setType === 'eventold') {
@@ -510,12 +510,16 @@ async function getCardSet(socket, client, setType) {
     try {
         let res = await client.query(text, values);
         if (setType === 'eventadult') {
-            return res.rows[0].eventadult;
+            cardset = res.rows[0].eventadult;
         } else if (setType === 'eventold') {
-            return res.rows[0].eventold;
+            cardset = res.rows[0].eventold;
         } else {
-            return res.rows[0].remainder;
+            cardset = res.rows[0].remainder;
         }
+        let promise = new Promise((resolve, reject) => {
+            resolve(cardset);
+        });
+        return promise;
     } catch (error) {
         console.log(error);
     }
@@ -529,7 +533,9 @@ async function standardEvent(eventData, socket, client, io, age) {
     let setType;
     let choicesArray;
     let cardDescription = eventData.description;
-    console.log('card description ' + cardDescription);
+    
+    console.log('Card description: ' + cardDescription);
+    
     io.to(room).emit('showRegularCard', {cardDescription});
 
     if (eventData.choice1text !== null && eventData.id !== 'EA6' && eventData.id !== 'EO5') {
@@ -756,7 +762,10 @@ async function getPartner(socket, client, io) {
     const values = [playerID];
     try {
         const res = await client.query(text, values);
-        return res.rows[0].married;
+        let promise = new Promise((resolve, reject) => {
+            resolve(res.rows[0].married);
+        });
+        return promise;
     } catch (error) {
         console.log(error.stack);
     }
