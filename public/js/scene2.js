@@ -158,7 +158,7 @@ class scene2 extends Phaser.Scene {
             } else if (i <= 66) {
                 card.age = "Adult";
             } else {
-                card.age = "OldAge";
+                card.age = "Old";
             }
             if (i % 3 === 1) {
                 card.type = "Event";

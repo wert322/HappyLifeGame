@@ -1,8 +1,17 @@
+const { query } = require('express');
 const { userJoin, getCurrentUser, userLeave, getRoomUsers } = require('./users');
 
 // ASYNC
 // Takes the type of card and age zone, does the proper updates to the user's data, and emits the proper information to display the card
 async function pullCard(cardtype, age, client, socket, io) {
+    if (cardtype === 'Misfortune') {
+        cardtype = 'bad';
+    } else if (cardtype === 'Lucky') {
+        cardtype = 'good';
+    } else {
+        cardtype = 'event';
+    }
+    console.log(cardtype);
     let promise1 =  getPartner(socket, client, io);
     let promise2 =  getCardSet(socket, client, 'remainder');
     let promise3 =  getCardSet(socket, client,'eventadult');
@@ -27,30 +36,38 @@ async function pullCard(cardtype, age, client, socket, io) {
         try {
             const res = await client.query(text, values);
             let goodData = res.rows[0];
-
+            console.log(goodData); 
+            
             cardDescription = goodData.description;
             iconCode = goodData.icon;
             io.to(room).emit('showRegularCard', {cardDescription, iconCode});
 
             if (goodData.traitcard === 2) {
                 doubleTraits(socket, io, client);
+                console.log(1);
             } else {
                 if (goodData.mobility) {
                     goodMobility(goodData, socket, io);
+                    console.log(2);
                 }
                 if (goodData.traitcard === 1) {
                     giveTrait(goodData.trait, socket.id, io, client);
+                    console.log(3); //Working
                     if (partnerID !== null) {
                         giveTrait(goodData.trait, partnerID, io, client);
+                        console.log(4);
                     }
                 }
                 if (goodData.money) {
                     moneyUpdate(goodData, 'good', socket, io, client);
+                    console.log(5); //Not working
                 } 
             }
             discardCard(goodData, socket, client, 'remainder');
+            console.log(6); //Working
         } catch (err) {
             console.log(err.stack);
+            console.log(query.text);
         }
     } else if (cardtype === 'bad') {
         const text = 'SELECT * FROM bad WHERE age = $1 AND NOT (id = ANY($2)) ORDER BY RANDOM() LIMIT 1';
@@ -58,32 +75,41 @@ async function pullCard(cardtype, age, client, socket, io) {
         try {
             const res = await client.query(text, values);
             let badData = res.rows[0];
-                
+            console.log(badData);
+
             cardDescription = badData.description;
             iconCode = badData.icon;
             io.to(room).emit('showRegularCard', {cardDescription, iconCode});
 
             if (badData.id === 'BC1' || badData.id === 'BA5') {
                 suddenDeath(badData, socket, client, io, socket.id);
+                console.log(1); //Bad
             } else if (badData.id === 'BC5'){
                     kidnapping(badData, socket, client, io);
+                    console.log(2);
             } else {
                 if (badData.traitcard) {
                     giveTrait(badData.trait, socket.id, io, client);
+                    console.log(3); //Good
                     if (partnerID !== null) {
                         giveTrait(badData.trait, partnerID, io, client);
+                        console.log(4);
                     }
                 }
                 if (badData.loseturn) {
                     loseTurn(socket, io, client);
+                    console.log(5);
                 }
                 if (badData.money) {
                     moneyUpdate(badData,'bad', socket, io, client);
+                    console.log(6); //Not working
                 } 
             }  
             discardCard(badData, socket, client, 'remainder');
+            console.log(7); //Good
         } catch (err) {
             console.log(err.stack);
+            console.log(query.text);
         }
     } else {
         let marriedCount = await getMarriedCount(socket, client);
@@ -128,8 +154,8 @@ function doubleTraits(socket, io, client) {
     let partnerID = getPartner(socket, client, io);
     let room = currentUser.room;
     
-    let cardChoice = new Text;
-    let resultPhrase = new Text;
+    let cardChoice;
+    let resultPhrase;
     
     if (result < 4) {
         cardChoice = 'T3';
@@ -240,19 +266,24 @@ async function moneyUpdate(cardData, type, socket, io, client) {
     
     let coefficient;
     let value = cardData.value;
+    console.log(room + value + 'moneyUpdate');
     try {
         if (type === 'good') {
             coefficient = await getCoefficient(client, 'earning', socket.id);
+            console.log(coefficient);
             value *= coefficient;
+            console.log(value);
             if (cardData.rolldice) {
                 let result = Math.floor(Math.random() * 6 + 1);
                 value *= result;
                 let resultPhrase = 'You rolled a ' + result + ', and received ' + value + ' million yen as a result.';
                 io.to(room).emit('showRegularOutcome', {resultPhrase});
             } 
+            console.log(value);
             updateBalance(client, socket, socket.id, value, io, false);
         } else if (type === 'bad') {
             coefficient = await getCoefficient(client, 'penalty', socket.id);
+            console.log(coefficient);
             if (cardData.percent) {
                 value = 1 - value;
                 value *= coefficient;
@@ -262,6 +293,7 @@ async function moneyUpdate(cardData, type, socket, io, client) {
                 value *= coefficient;
             }
             value *= -1;
+            console.log(value);
             updateBalance(client, socket, socket.id, value, io, false);
         } else { // Type: choice
             if (value < 0) {
@@ -269,7 +301,9 @@ async function moneyUpdate(cardData, type, socket, io, client) {
             } else {
                 coefficient = await getCoefficient(client, 'earning', socket.id);
             }
+            console.log(coefficient);
             value *= coefficient;
+            console.log(value);
             updateBalance(client, socket, socket.id, value, io, false);
         } 
     } catch (err) {
@@ -282,8 +316,11 @@ async function moneyUpdate(cardData, type, socket, io, client) {
 async function updateBalance(client, socket, id, sumvalue, io, ignore) {
     try {
         let balance = await getBalance(client, id);
+        console.log(balance + ' balance' + typeof balance);
+        console.log(typeof sumvalue);
         let partnerID = getPartner(socket, client, io);
         balance += sumvalue;
+        console.log(balance + ' balance after adding value' + typeof balance);
         let text = 'UPDATE users SET balance = $1 WHERE id = $2';
         let values = [balance, id];
         client
@@ -307,7 +344,7 @@ async function getBalance(client, id) {
     const values = [id];
     try {
         const res = await client.query(text, values);
-        return res.rows[0].balance;
+        return Number(res.rows[0].balance);
     } catch (error) {
         console.log(error.stack);
     }
@@ -318,22 +355,21 @@ async function getBalance(client, id) {
 async function getCoefficient(client, header, id) {
 
     const values = [id];
-
-    if (header === 'receiving') {
-        text = 'SELECT receiving FROM users WHERE id = $1 LIMIT 1';
-    } else if (header === 'giving') {
-        text = 'SELECT giving FROM users WHERE id = $1 LIMIT 1';
-    } else if (header === 'earning') {
-        text = 'SELECT earning FROM users WHERE id = $1 LIMIT 1';
-    } else if (header === 'penalty') {
-        text = 'SELECT penalty FROM users WHERE id = $1 LIMIT 1';
-    } else {
-        text = 'SELECT college FROM users WHERE id = $1 LIMIT 1';
-    }
+    const text = 'SELECT * FROM users WHERE id = $1 LIMIT 1';
 
     try {
         const res = await client.query(text, values);
-        return res.rows[0].header;
+        if (header === 'receiving') {
+            return Number(res.rows[0].receiving);
+        } else if (header === 'giving') {
+            return Number(res.rows[0].giving);
+        } else if (header === 'earning') {
+            return Number(res.rows[0].earning);
+        } else if (header === 'penalty') {
+            return Number(res.rows[0].penalty);
+        } else {
+            return Number(res.rows[0].college);
+        }
     } catch (error) {
         console.log(error.stack)
     }
@@ -341,8 +377,18 @@ async function getCoefficient(client, header, id) {
 
 // Updates the coefficient for the specific column for the specific user
 function updateCoefficient(client, header, id, value) {
-    const text = 'UPDATE users SET $1 = $2 WHERE id = $3';
-    const values = [header, value, id];
+    if (header === 'receiving') {
+        var text = 'UPDATE users SET receiving = $1 WHERE id = $2';
+    } else if (header === 'giving') {
+        var text = 'UPDATE users SET giving = $1 WHERE id = $2';
+    } else if (header === 'earning') {
+        var text = 'UPDATE users SET earning = $1 WHERE id = $2';
+    } else if (header === 'penalty') {
+        var text = 'UPDATE users SET penalty = $1 WHERE id = $2';
+    } else {
+        var text = 'UPDATE users SET college = $1 WHERE id = $2';
+    }
+    const values = [value, id];
     client
         .query(text, values)
         .catch(e => console.error(e.stack));
@@ -431,7 +477,13 @@ async function discardCard(tempRow, socket, client, setType) {
         let currentRoom = getCurrentUser(socket.id).room;
         var discards = await getCardSet(socket, client, setType);
         discards.push(tempRow.id);
-        const text = 'UPDATE cardsets SET $1 WHERE roomname = $2';
+        if (tempRow.age === 'Child') {
+            var text = 'UPDATE cardsets SET remainder = $1 WHERE roomname = $2';
+        } else if (tempRow.age === 'Adult') {
+            var text = 'UPDATE cardsets SET eventadult = $1 WHERE roomname = $2';  
+        } else {
+            var text = 'UPDATE cardsets SET eventold = $1 WHERE roomname = $2';
+        }
         const values = [discards, currentRoom];
         client
             .query(text, values)

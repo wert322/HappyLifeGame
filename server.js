@@ -15,6 +15,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 const botName = 'Server';
 var roomList = [];
 
+var counter = 0;
+
 const {Client} = require('pg');
 const client = new Client({
     connectionString: 'postgres://mhzhcpihkxyejj:0be6dc9b8f8b2cd59cb3b957077a1b1e1d670525ca3a4216ffab4b647b14d9f9@ec2-107-20-104-234.compute-1.amazonaws.com:5432/d66rq4fqjgh8k9?sslmode=true',
@@ -130,6 +132,9 @@ io.on('connection', socket => {
 
     // Listens for game turn
     socket.on('gameTurn', ({playerID, dieValue, cardType, cardAge}) => {
+        console.log(counter);
+        console.log(cardType);
+        counter++;
         const user = getCurrentUser(socket.id);
         io.to(user.room).emit('updateOtherGameUsers', {playerID, dieValue});
         pullCard(cardType, cardAge, client, socket, io);
