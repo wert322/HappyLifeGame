@@ -20,13 +20,17 @@ class scene2 extends Phaser.Scene {
     }
     
     create() {
+        // debug tools
+        this.debugText = this.add.text(0, 0, "", {font: "20px Roboto"}).setOrigin(0);
+        this.debugText.visible = true;
+
         // Set up cards
         this.cardList = this.setupCards();
         let cards = this.setupBoard();
         this.allCardsContainer = this.add.container(0, 0, cards);
 
         // Keyboard inputs
-        this.keyboard = this.input.keyboard.addKeys("LEFT,RIGHT,SPACE");
+        this.keyboard = this.input.keyboard.addKeys("LEFT,RIGHT");
 
         // Game variables
         this.boardOffset = 0;
@@ -49,28 +53,46 @@ class scene2 extends Phaser.Scene {
             this.allPlayerInfoText.add(playerInfoText);
         }
 
-        // Text box
+        // Text box. Note that 4 lines is the max currently
         this.textBoxArea = this.add.rectangle(0, 900, canvasWidth, canvasHeight - 900, "0xFF7AD9").setOrigin(0);
         this.textBox = this.add.text(canvasWidth / 2, 910, "", {font: "40px Roboto", wordWrap: {width: (canvasWidth * 0.8)}, useAdvancedWrap: true}).setOrigin(0.5,0);
 
+        this.rollButton = this.add.rectangle(canvasWidth / 2, 970, canvasWidth / 3, 90, "0xFFBFEA").setOrigin(0.5, 0);
+        this.rollButton.visible = false;
+        this.rollButtonText = this.add.text(canvasWidth / 2, 980, "Roll", {font: "70px Roboto"}).setOrigin(0.5, 0);
+        this.rollButtonText.visible = false;
+        this.rollButton.on('pointerdown', this.rollButtonPressed, this)
+
         // If first player, show the your turn text
         if (userID === 0) {
-            this.textBox.setText("Your turn! Press SPACE to roll the die.");
+            this.textBox.setText("Your turn! Press the button to roll the die.");
+            this.rollButton.visible = true;
+            this.rollButtonText.visible = true;
+            this.rollButton.setInteractive();
         }
 
-        // Card icon display
-        this.cardIcon = this.add.text(720, 450, "", {font: "500px fontAwesome", fill: '#000000'}).setOrigin(0.5);
-        this.cardIcon.depth = 1;
+        // Landed card variables
+        // cardText  : the text displayed on the card
+        // cardIcon  : the icon displayed on the card, currently not working
+        // blankCard : the blank card used on card flip
+        this.cardText = this.add.text(0, 450, "", {font: "50px Roboto", fill: '#000000', wordWrap: {width: 575}}).setOrigin(0.5);
+        this.cardText.depth = 2;
+        // this.cardIcon = this.add.text(720, 450, "", {font: "500px fontAwesome", fill: '#000000'}).setOrigin(0.5);
+        // this.cardIcon.depth = 1;
+        this.blankCard = this.add.sprite(0, 450, 'cardBlank').setOrigin(0.5);
+        this.blankCard.on('pointerdown', this.blankCardPressed, this);
+        this.blankCard.visible = false;
 
         // Get roll info from other players in the room
         socket.on('updateOtherGameUsers', ({ playerID, dieValue }) => {
             if (this.displayingCard) {
-                this.blankCard.destroy();
+                this.blankCard.sprite.enable;
                 this.cardIcon.setText("");
                 this.displayLandedCard = false;
             }
             rollInfo.playerID = playerID;
             rollInfo.roll = dieValue;
+            rollInfo.type = "regular";
             if (playerID === userID) {
                 this.textBox.setText("You rolled a " + dieValue + "!");
             } else {
@@ -78,22 +100,23 @@ class scene2 extends Phaser.Scene {
             }
         });
 
-        // 
+        // If the landed card was a regular card, run this
         socket.on('showRegularCard', ({cardDescription, iconCode}) => {
-            console.log(iconCode); // ERROR: currently prints out undefined
             // iconCode = '\uf368 '; // temp testing
             this.simulateTurn(rollInfo.playerID, rollInfo.roll, cardDescription, iconCode);
-            if (userID != rollInfo.playerID) {
-                this.turn = (rollInfo.playerID + 1) % players.length;
-            }
+            this.turn = (rollInfo.playerID + 1) % players.length;
+        });
+
+        // If the landed card was a two choice event, run this
+        socket.on('twoChoiceEvent', ({text1, choice1, text2, choice2}) => {
+            rollInfo.type = "twoChoice";
+            this.twoChoice(text1, choice1, text2, choice2);
         });
     }
 
     update() {
-        // Update all player locations
-        for (let i = 0; i < players.length; i++) {
-            this.allPlayersContainer.getAt(i).setPosition(this.cardList[players[i].location].xpos + this.boardOffset, this.cardList[players[i].location].ypos);
-        }
+        // Debugging variables
+        this.debugText.setText("Turn: " + this.turn + "\nPlayer #: " + players.length);
 
         // Update all player balances
         socket.on('balanceUpdate', ({usernames, balances}) => {
@@ -125,25 +148,15 @@ class scene2 extends Phaser.Scene {
         if (this.keyboard.LEFT.isDown && this.allCardsContainer.x <= 0) {
             this.boardOffset += 10;
             this.allCardsContainer.x += 10;
+            for (let i = 0; i < players.length; i++) {
+                this.allPlayersContainer.getAt(i).x += 10;
+            }
         }
         if (this.keyboard.RIGHT.isDown && this.allCardsContainer.x >= -3700) {
             this.boardOffset -= 10;
             this.allCardsContainer.x -= 10;
-        }
-
-        // Press space on your turn to roll die and move forward
-        if (this.keyboard.SPACE.isDown && (this.turn === userID) && !this.displayingCard) {
-            this.turn = (userID + 1) % players.length;
-            var dieValue = this.rollDie();
-            if (players[userID].location + dieValue >= 100) {
-                players[userID].location = 100;
-                socket.emit('gameEnd', (true));
-            } else { // game has not ended yet, so run a turn
-                let location = this.getLandedCardLocation(players[userID].location, dieValue);
-                let playerID = userID;
-                let cardType = this.cardList[location].type;
-                let cardAge = this.cardList[location].age;
-                socket.emit('gameTurn', ({playerID, dieValue, cardType, cardAge}));
+            for (let i = 0; i < players.length; i++) {
+                this.allPlayersContainer.getAt(i).x -= 10;
             }
         }
     }
@@ -212,37 +225,52 @@ class scene2 extends Phaser.Scene {
     // acts out a turn given inputted player and roll amount
     simulateTurn(playerID, dieValue, cardDescription, iconCode) {
         var newPlayerLocation = this.getLandedCardLocation(players[playerID].location, dieValue);
-        players[playerID].location = newPlayerLocation;
         this.cardList[newPlayerLocation].landed = true;
         var landedCardIndex = this.getLandedCardIndex(newPlayerLocation);
-        //this.moveUserPiece(playerID, dieValue, newPlayerLocation);
-        this.displayLandedCard(landedCardIndex, cardDescription, iconCode);
+        var playerPiece = this.allPlayersContainer.getAt(playerID);
+        this.moveByOne("", "", this, playerPiece, playerID, newPlayerLocation, landedCardIndex, cardDescription, iconCode);
+    }
+
+    // moves the player up by one card
+    moveByOne(tween, targets, self, playerPiece, playerID, newPlayerLocation, landedCardIndex, cardDescription, iconCode) {
+        if (players[playerID].location === newPlayerLocation) {
+            self.displayLandedCard(self, landedCardIndex, cardDescription, iconCode);
+        } else {
+            players[playerID].location++;
+            self.tweens.add({
+                targets: playerPiece,
+                props: {
+                    x: self.cardList[players[playerID].location].xpos + self.boardOffset,
+                    y: self.cardList[players[playerID].location].ypos
+                },
+                duration: moveForwardOneCardTime,
+                onComplete: self.moveByOne,
+                onCompleteParams: [self, playerPiece, playerID, newPlayerLocation, landedCardIndex, cardDescription, iconCode]
+            });
+        }
     }
 
     // displays the card at inputted index
-    displayLandedCard(index, cardDescription, iconCode) {
-        let card = this.allCardsContainer.getAt(index);
-        this.allCardsContainer.bringToTop(card);
-        this.animateLandedCard(card, cardDescription, iconCode);
+    displayLandedCard(self, index, cardDescription, iconCode) {
+        let card = self.allCardsContainer.getAt(index);
+        self.allCardsContainer.bringToTop(card);
+        self.animateLandedCard(self, card, cardDescription, iconCode);
     }
 
     // animation to move card to center of screen
-    animateLandedCard(card, cardDescription, iconCode) {
+    animateLandedCard(self, card, cardDescription, iconCode) {
         card.depth = 1;
-        var self = this;
-        this.tweens.add({
+        self.tweens.add({
             targets: card,
             props: {
-                x: 600 - this.boardOffset,
+                x: 600 - self.boardOffset,
                 y: 450,
                 rotation: 0,
                 scaleX: 1,
                 scaleY: 1
             },
             duration: cardMoveToCenterTime,
-            yoyo: false,
-            repeat: 0,
-            onComplete: this.flipLandedCard,
+            onComplete: self.flipLandedCard,
             onCompleteParams: [self, card, cardDescription, iconCode]
         });
     }
@@ -256,25 +284,38 @@ class scene2 extends Phaser.Scene {
             delay: 250,
             duration: cardFlipTime / 2,
             onComplete: self.flipLandedCard2,
-            onCompleteParams: [self, cardDescription, iconCode]
+            onCompleteParams: [self, card, cardDescription, iconCode]
         });
     }
 
-    flipLandedCard2(tween, targets, self, cardDescription, iconCode) {
-        self.displayingCard = true;
-        self.allCardsContainer.last.destroy();
-        self.blankCard = self.add.sprite(600 - self.boardOffset, 450, 'cardBlank').setOrigin(0.5);
-        self.cardIcon.setText(iconCode);
-        self.cardIcon.depth = 2;
-        self.cardIcon.scaleX = 0;
-        self.blankCard.scaleX = 0;
+    flipLandedCard2(tween, targets, self, card, cardDescription, iconCode) {
+        card.destroy();
+        // card text
+        self.cardText.x = 600 - self.boardOffset
+        self.cardText.setText(cardDescription);
+        self.cardText.scaleX = 0;
         self.tweens.add({
-            targets: self.cardIcon,
+            targets: self.cardText,
             props: {
                 scaleX: 1
             },
             duration: cardFlipTime / 2,
         });
+        // card icon
+        // self.cardIcon.setText(iconCode);
+        // self.cardIcon.depth = 2;
+        // self.cardIcon.scaleX = 0;
+        // self.tweens.add({
+        //     targets: self.cardIcon,
+        //     props: {
+        //         scaleX: 1
+        //     },
+        //     duration: cardFlipTime / 2,
+        // });
+        // blank card
+        self.blankCard.scaleX = 0;
+        self.blankCard.visible = true;
+        self.blankCard.x = 600 - self.boardOffset;
         self.tweens.add({
             targets: self.blankCard,
             props: {
@@ -287,18 +328,10 @@ class scene2 extends Phaser.Scene {
     }
 
     cardAnimationEnd(tween, targets, self, cardDescription) {
-        self.textBox.setText(cardDescription);
-        self.blankCard.setInteractive();
-        self.blankCard.on('pointerdown', function() {
-            self.cardIcon.setText("");
-            self.blankCard.destroy();
-            if (userID === this.turn) {
-                this.textBox.setText("Your turn! Press SPACE to roll the die.");
-            } else {
-                self.textBox.setText("");
-            }
-            self.displayingCard = false;
-        });
+        self.displayingCard = true;
+        if (rollInfo.type === "regular") {
+            self.blankCard.setInteractive();
+        }
     }
 
     // returns the container index of the landed card in reference to the remaining cards
@@ -326,5 +359,50 @@ class scene2 extends Phaser.Scene {
     // rolls a die and returns the value (1 to 6)
     rollDie() {
         return Math.floor(Math.random() * 6 + 1);
+    }
+
+    // blank card interactive code (on click, runs this)
+    blankCardPressed() {
+        this.cardText.setText("");
+        // self.cardIcon.setText("");
+        this.blankCard.disableInteractive();
+        this.blankCard.visible = false;
+        if (userID === this.turn) {
+            this.textBox.setText("Your turn! Press the button to roll the die.");
+            this.rollButton.visible = true;
+            this.rollButtonText.visible = true;
+            this.rollButton.setInteractive();
+        } else {
+            this.textBox.setText("Waiting for " + players[this.turn].name + " to roll.");
+        }
+        this.displayingCard = false;
+    }
+
+    rollButtonPressed() {
+        this.rollButtonText.visible = false;
+        this.rollButton.visible = false;
+        this.rollButton.disableInteractive();
+        this.cardText.setText("");
+        var dieValue = this.rollDie();
+        if (players[userID].location + dieValue >= 100) {
+            players[userID].location = 100;
+            socket.emit('gameEnd', (true));
+            this.scene.scene.start("endGame");
+        } else { // game has not ended yet, so run a turn
+            let location = this.getLandedCardLocation(players[userID].location, dieValue);
+            let playerID = userID;
+            let cardType = this.cardList[location].type;
+            let cardAge = this.cardList[location].age;
+            socket.emit('gameTurn', ({playerID, dieValue, cardType, cardAge}));
+        }
+    }
+
+    twoChoice(text1, option1, text2, option2) {
+        if (!this.displayingCard) {
+            window.setTimeout(this.twoChoice, 1000, text1, option1, text2, option2);
+        } else {
+            this.textBox.setText("Two option card pulled (temp text)");
+
+        }
     }
 }

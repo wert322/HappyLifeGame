@@ -1,6 +1,7 @@
 const cardCount = 99; // Number of cards excluding start/goal
 const players = []; // Stores player info
 const cardMoveToCenterTime = 1000; // Time needed to move landed card to middle of screen
+const moveForwardOneCardTime = 250; // Time needed to move player token up by one card
 const cardFlipTime = 500; // Time needed to flip landed card
 const canvasWidth = 1920; // Width of the canvas
 const canvasHeight = 1080; // Height of the canvas
@@ -10,7 +11,7 @@ const colors = ["0xFF5757", "0xFF9C57", "0xFFF4B7", "0xE2F0CB", "0x85EAD7", "0xC
 
 var userID = -1; // user ID
 
-const rollInfo = {playerID: -1, roll: -1}; // stores the roll info
+const rollInfo = {playerID: -1, roll: -1, type: ""}; // stores the roll info
 
 const config = {
     type: Phaser.AUTO,
@@ -22,7 +23,7 @@ const config = {
         autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
     },
     backgroundColor: 0xffbfea,
-    scene: [scene1, scene2]
+    scene: [scene1, scene2, scene3]
 }
 
 const game = new Phaser.Game(config);
