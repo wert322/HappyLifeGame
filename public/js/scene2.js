@@ -21,7 +21,7 @@ class scene2 extends Phaser.Scene {
     
     create() {
         // debug tools
-        this.debugText = this.add.text(0, 0, "", {font: "20px Roboto"}).setOrigin(0);
+        this.debugText = this.add.text(0, 0, "", {fontSize: "20px", fontFamily: "Roboto"}).setOrigin(0);
         this.debugText.visible = debugMode;
 
         // Set up cards
@@ -48,19 +48,19 @@ class scene2 extends Phaser.Scene {
         this.sideInfo = this.add.rectangle(canvasWidth * 0.875, 0, canvasWidth / 4, 900, "0xFFE3F6").setOrigin(0.5, 0);
         this.allPlayerInfoText = this.add.container(0, 0);
         for (let i = 0; i < players.length; i++) {
-            let playerInfoText = this.add.text(canvasWidth * 0.75 + 50, 10 + 50 * i, players[i].name, {font: "30px Roboto", color: "0x000000"}).setOrigin(0);
-            this.add.rectangle(canvasWidth * 0.75 + 10, 10 + 50 * i, 30, 30, players[i].playerColor).setOrigin(0);
+            let playerInfoText = this.add.text(canvasWidth * 0.75 + 10, 10 + 150 * i, this.formatPlayerText(i), {fontSize: "30px", fontFamily: "Roboto", color: "0x000000"}).setOrigin(0);
+            this.add.rectangle(canvasWidth * 0.75 + 10, 10 + 150 * i, 30, 30, players[i].playerColor).setOrigin(0);
             this.allPlayerInfoText.add(playerInfoText);
         }
 
         // Text box (note that 4 lines is the max currently)
         this.textBoxArea = this.add.rectangle(0, 900, canvasWidth, canvasHeight - 900, "0xFF7AD9").setOrigin(0);
-        this.textBox = this.add.text(canvasWidth / 2, 910, "", {font: "40px Roboto", wordWrap: {width: (canvasWidth * 0.8)}, useAdvancedWrap: true}).setOrigin(0.5,0);
+        this.textBox = this.add.text(canvasWidth / 2, 910, "", {fontSize: "40px", fontFamily: "Roboto", wordWrap: {width: (canvasWidth * 0.8)}, useAdvancedWrap: true}).setOrigin(0.5,0);
 
         // Roll Button
         this.rollButton = this.add.rectangle(canvasWidth / 2, 970, canvasWidth / 3, 90, "0xFFBFEA").setOrigin(0.5, 0);
         this.rollButton.visible = false;
-        this.rollButtonText = this.add.text(canvasWidth / 2, 980, "Roll", {font: "70px Roboto"}).setOrigin(0.5, 0);
+        this.rollButtonText = this.add.text(canvasWidth / 2, 980, "Roll", {fontSize: "70px", fontFamily: "Roboto"}).setOrigin(0.5, 0);
         this.rollButtonText.visible = false;
         this.rollButton.on('pointerdown', this.rollButtonPressed, this);
 
@@ -76,9 +76,9 @@ class scene2 extends Phaser.Scene {
         // cardText  : the text displayed on the card
         // cardIcon  : the icon displayed on the card, currently not working
         // blankCard : the blank card used on card flip
-        this.cardText = this.add.text(0, 450, "", {font: "50px Roboto", fill: '#000000', wordWrap: {width: 575}}).setOrigin(0.5);
+        this.cardText = this.add.text(0, 450, "", {fontSize: "50px", fontFamily: "Roboto", fill: '#000000', wordWrap: {width: 575}}).setOrigin(0.5);
         this.cardText.depth = 2;
-        // this.cardIcon = this.add.text(720, 450, "", {font: "500px fontAwesome", fill: '#000000'}).setOrigin(0.5);
+        // this.cardIcon = this.add.text(720, 450, "", {fontSize: "500px", fontFamily: "fontAwesome", fill: '#000000'}).setOrigin(0.5);
         // this.cardIcon.depth = 1;
         this.blankCard = this.add.sprite(0, 450, 'cardBlank').setOrigin(0.5);
         this.blankCard.on('pointerdown', this.setupNextTurn, this);
@@ -107,9 +107,9 @@ class scene2 extends Phaser.Scene {
 
         // Two choice option
         this.option1Button = this.add.rectangle(20, 920, 930, 140, "0xFF9FE0").setOrigin(0);
-        this.option1ButtonText = this.add.text(485, 930, "", {font: "40px Roboto", wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
+        this.option1ButtonText = this.add.text(485, 930, "", {fontSize: "40px", fontFamily: "Roboto", wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
         this.option2Button = this.add.rectangle(970, 920, 930, 140, "0xFF9FE0").setOrigin(0);
-        this.option2ButtonText = this.add.text(1435, 930, "", {font: "40px Roboto", wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
+        this.option2ButtonText = this.add.text(1435, 930, "", {fontSize: "40px", fontFamily: "Roboto", wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
         this.option1Button.visible = false;
         this.option1ButtonText.visible = false;
         this.option2Button.visible = false;
@@ -128,7 +128,8 @@ class scene2 extends Phaser.Scene {
 
     update() {
         // Debugging variables
-        this.debugText.setText("Turn: " + this.turn + "\nRoll Type: " + rollInfo.type + "\nDisplaying card: " + this.displayingCard);
+        this.debugText.setText("Turn: " + this.turn + "\nRoll Type: " + rollInfo.type
+            + "\nDisplaying card: " + this.displayingCard);
 
         // Update all player balances
         socket.on('balanceUpdate', ({usernames, balances}) => {
@@ -155,6 +156,11 @@ class scene2 extends Phaser.Scene {
                 }
             }
         });
+
+        // update sidebar info
+        for (let i = 0; i < players.length; i++) {
+            this.allPlayerInfoText.getAt(i).setText(this.formatPlayerText(i));
+        }
 
         // Left and right movement scrolling
         if (this.keyboard.LEFT.isDown && this.allCardsContainer.x <= 0) {
@@ -391,6 +397,17 @@ class scene2 extends Phaser.Scene {
         } else {
             this.textBox.setText("Waiting for " + players[this.turn].name + " to roll...");
         }
+    }
+
+    // format player text for side text info
+    formatPlayerText(index) {
+        let balance = "";
+        // if (players[index].balance >= 0) {
+        //     balance = ("000000" + players[index].balance).slice(-6);
+        // } else {
+        //     balance = "-" + ("000000" + players[index].balance * -1).slice(-5);
+        // }
+        return ("     " + players[index].name + "\nBalance: " + players[index].balance + " M¥");
     }
 
     rollButtonPressed() {

@@ -82,7 +82,7 @@ class scene1 extends Phaser.Scene {
             if (users[i].username === username) {
                 userID = i;
             }
-            let user = {name: users[i].username, playerColor: color, location: 0, balance: 0, childrenCount: 0, married: "", traits: []};
+            let user = {name: users[i].username, playerColor: color, location: 0, balance: 10, childrenCount: 0, married: "", traits: []};
             players.push(user);
         }
     }
