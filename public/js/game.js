@@ -5,14 +5,14 @@ const moveForwardOneCardTime = 250; // Time needed to move player token up by on
 const cardFlipTime = 500; // Time needed to flip landed card
 const canvasWidth = 1920; // Width of the canvas
 const canvasHeight = 1080; // Height of the canvas
-const debugMode = false; // debug mode (shows certain variable info in top left)
+const debugMode = true; // debug mode (shows certain variable info in top left)
 
 // user colors: red         orange      yellow      green       light blue  blue
 const colors = ["0xFF5757", "0xFF9C57", "0xFFF4B7", "0xE2F0CB", "0x85EAD7", "0xC7CEEA"];
 
 var userID = -1; // user ID
 
-const rollInfo = {playerID: -1, roll: -1, type: ""}; // stores the roll info
+const rollInfo = {playerID: -1, roll: -1, type: "", optionIDs: []}; // stores the roll info
 
 const config = {
     type: Phaser.AUTO,

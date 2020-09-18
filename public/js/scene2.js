@@ -45,7 +45,7 @@ class scene2 extends Phaser.Scene {
         }
 
         // Game side display
-        this.sideInfo = this.add.rectangle(canvasWidth * 0.875, 0, canvasWidth / 4, 900, "0xFFFFFF").setOrigin(0.5, 0);
+        this.sideInfo = this.add.rectangle(canvasWidth * 0.875, 0, canvasWidth / 4, 900, "0xFFE3F6").setOrigin(0.5, 0);
         this.allPlayerInfoText = this.add.container(0, 0);
         for (let i = 0; i < players.length; i++) {
             let playerInfoText = this.add.text(canvasWidth * 0.75 + 50, 10 + 50 * i, players[i].name, {font: "30px Roboto", color: "0x000000"}).setOrigin(0);
@@ -53,15 +53,16 @@ class scene2 extends Phaser.Scene {
             this.allPlayerInfoText.add(playerInfoText);
         }
 
-        // Text box. Note that 4 lines is the max currently
+        // Text box (note that 4 lines is the max currently)
         this.textBoxArea = this.add.rectangle(0, 900, canvasWidth, canvasHeight - 900, "0xFF7AD9").setOrigin(0);
         this.textBox = this.add.text(canvasWidth / 2, 910, "", {font: "40px Roboto", wordWrap: {width: (canvasWidth * 0.8)}, useAdvancedWrap: true}).setOrigin(0.5,0);
 
+        // Roll Button
         this.rollButton = this.add.rectangle(canvasWidth / 2, 970, canvasWidth / 3, 90, "0xFFBFEA").setOrigin(0.5, 0);
         this.rollButton.visible = false;
         this.rollButtonText = this.add.text(canvasWidth / 2, 980, "Roll", {font: "70px Roboto"}).setOrigin(0.5, 0);
         this.rollButtonText.visible = false;
-        this.rollButton.on('pointerdown', this.rollButtonPressed, this)
+        this.rollButton.on('pointerdown', this.rollButtonPressed, this);
 
         // If first player, show the your turn text
         if (userID === 0) {
@@ -80,15 +81,13 @@ class scene2 extends Phaser.Scene {
         // this.cardIcon = this.add.text(720, 450, "", {font: "500px fontAwesome", fill: '#000000'}).setOrigin(0.5);
         // this.cardIcon.depth = 1;
         this.blankCard = this.add.sprite(0, 450, 'cardBlank').setOrigin(0.5);
-        this.blankCard.on('pointerdown', this.blankCardPressed, this);
+        this.blankCard.on('pointerdown', this.setupNextTurn, this);
         this.blankCard.visible = false;
 
         // Get roll info from other players in the room
         socket.on('updateOtherGameUsers', ({ playerID, dieValue }) => {
             if (this.displayingCard) {
-                this.blankCard.sprite.enable;
-                this.cardIcon.setText("");
-                this.displayLandedCard = false;
+                this.setupNextTurn();
             }
             rollInfo.playerID = playerID;
             rollInfo.roll = dieValue;
@@ -104,19 +103,33 @@ class scene2 extends Phaser.Scene {
         socket.on('showRegularCard', ({cardDescription, iconCode}) => {
             // iconCode = '\uf368 '; // temp testing
             this.simulateTurn(rollInfo.playerID, rollInfo.roll, cardDescription, iconCode);
-            this.turn = (rollInfo.playerID + 1) % players.length;
         });
 
+        // Two choice option
+        this.option1Button = this.add.rectangle(20, 920, 930, 140, "0xFF9FE0").setOrigin(0);
+        this.option1ButtonText = this.add.text(485, 930, "", {font: "40px Roboto", fill: '#000000', wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
+        this.option2Button = this.add.rectangle(970, 920, 930, 140, "0xFF9FE0").setOrigin(0);
+        this.option2ButtonText = this.add.text(1435, 930, "", {font: "40px Roboto", fill: '#000000', wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
+        this.option1Button.visible = false;
+        this.option1ButtonText.visible = false;
+        this.option2Button.visible = false;
+        this.option2ButtonText.visible = false;
+        this.option1Button.on('pointerdown', this.option1ButtonPressed, this);
+        this.option2Button.on('pointerdown', this.option2ButtonPressed, this);
+
         // If the landed card was a two choice event, run this
-        socket.on('twoChoiceEvent', ({text1, choice1, text2, choice2}) => {
+        socket.on('twoChoiceEvent', ({text1, choice1ID, text2, choice2ID}) => {
+            console.log("text1:" + text1 + "\nchoice1ID: " + choice1ID + "text1:" + text2 + "\nchoice2ID: " + choice2ID);
             rollInfo.type = "twoChoice";
-            this.twoChoice(text1, choice1, text2, choice2);
+            rollInfo.optionIDs = [choice1ID, choice2ID];
+            this.option1ButtonText.setText(text1);
+            this.option2ButtonText.setText(text2);
         });
     }
 
     update() {
         // Debugging variables
-        this.debugText.setText("Turn: " + this.turn + "\nPlayer #: " + players.length);
+        this.debugText.setText("Turn: " + this.turn + "\nRoll Type: " + rollInfo.type + "\nDisplaying card: " + this.displayingCard);
 
         // Update all player balances
         socket.on('balanceUpdate', ({usernames, balances}) => {
@@ -331,6 +344,8 @@ class scene2 extends Phaser.Scene {
         self.displayingCard = true;
         if (rollInfo.type === "regular") {
             self.blankCard.setInteractive();
+        } else if (rollInfo.type === "twoChoice") {
+            self.twoChoice(self);
         }
     }
 
@@ -361,21 +376,22 @@ class scene2 extends Phaser.Scene {
         return Math.floor(Math.random() * 6 + 1);
     }
 
-    // blank card interactive code (on click, runs this)
-    blankCardPressed() {
+    // sets up the next turn (hides blank card, increments turn, displays roll text)
+    setupNextTurn() {
         this.cardText.setText("");
         // self.cardIcon.setText("");
         this.blankCard.disableInteractive();
         this.blankCard.visible = false;
+        this.displayingCard = false;
+        this.turn = (rollInfo.playerID + 1) % players.length;
         if (userID === this.turn) {
             this.textBox.setText("Your turn! Press the button to roll the die.");
             this.rollButton.visible = true;
             this.rollButtonText.visible = true;
             this.rollButton.setInteractive();
         } else {
-            this.textBox.setText("Waiting for " + players[this.turn].name + " to roll.");
+            this.textBox.setText("Waiting for " + players[this.turn].name + " to roll...");
         }
-        this.displayingCard = false;
     }
 
     rollButtonPressed() {
@@ -397,12 +413,35 @@ class scene2 extends Phaser.Scene {
         }
     }
 
-    twoChoice(text1, option1, text2, option2) {
-        if (!this.displayingCard) {
-            window.setTimeout(this.twoChoice, 1000, text1, option1, text2, option2);
-        } else {
-            this.textBox.setText("Two option card pulled (temp text)");
+    twoChoice(self) {
+        self.textBox.setText("");
+        self.option1Button.visible = true;
+        self.option1ButtonText.visible = true;
+        self.option1Button.setInteractive();
+        self.option2Button.visible = true;
+        self.option2ButtonText.visible = true;
+        self.option2Button.setInteractive();
+    }
 
-        }
+    option1ButtonPressed() {
+        this.hide2OptionButtons();
+        socket.emit('twoChoiceResponse', rollInfo.optionIDs[0]);
+        this.setupNextTurn();
+    }
+
+    option2ButtonPressed() {
+        this.hide2OptionButtons();
+        socket.emit('twoChoiceResponse', rollInfo.optionIDs[1]);
+        this.setupNextTurn();
+    }
+
+    hide2OptionButtons() {
+        this.option1Button.visible = false;
+        this.option1ButtonText.visible = false;
+        this.option2Button.visible = false;
+        this.option2ButtonText.visible = false;
+        this.option1Button.disableInteractive();
+        this.option2Button.disableInteractive();
+        this.displayingCard = false;
     }
 }
