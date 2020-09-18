@@ -107,9 +107,9 @@ class scene2 extends Phaser.Scene {
 
         // Two choice option
         this.option1Button = this.add.rectangle(20, 920, 930, 140, "0xFF9FE0").setOrigin(0);
-        this.option1ButtonText = this.add.text(485, 930, "", {font: "40px Roboto", fill: '#000000', wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
+        this.option1ButtonText = this.add.text(485, 930, "", {font: "40px Roboto", wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
         this.option2Button = this.add.rectangle(970, 920, 930, 140, "0xFF9FE0").setOrigin(0);
-        this.option2ButtonText = this.add.text(1435, 930, "", {font: "40px Roboto", fill: '#000000', wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
+        this.option2ButtonText = this.add.text(1435, 930, "", {font: "40px Roboto", wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
         this.option1Button.visible = false;
         this.option1ButtonText.visible = false;
         this.option2Button.visible = false;
@@ -118,12 +118,11 @@ class scene2 extends Phaser.Scene {
         this.option2Button.on('pointerdown', this.option2ButtonPressed, this);
 
         // If the landed card was a two choice event, run this
-        socket.on('twoChoiceEvent', ({text1, choice1ID, text2, choice2ID}) => {
-            console.log("text1:" + text1 + "\nchoice1ID: " + choice1ID + "text1:" + text2 + "\nchoice2ID: " + choice2ID);
+        socket.on('twoChoiceEvent', ({choicesArray}) => {
             rollInfo.type = "twoChoice";
-            rollInfo.optionIDs = [choice1ID, choice2ID];
-            this.option1ButtonText.setText(text1);
-            this.option2ButtonText.setText(text2);
+            rollInfo.optionIDs = [choicesArray[1], choicesArray[3]];
+            this.option1ButtonText.setText(choicesArray[0]);
+            this.option2ButtonText.setText(choicesArray[2]);
         });
     }
 
