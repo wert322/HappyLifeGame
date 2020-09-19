@@ -535,16 +535,23 @@ async function standardEvent(eventData, socket, client, io, age) {
     let cardDescription = eventData.description;
     
     console.log('Card description: ' + cardDescription);
+    console.log(eventData);
     
     io.to(room).emit('showRegularCard', {cardDescription});
 
     if (eventData.choice1text !== null && eventData.id !== 'EA6' && eventData.id !== 'EO5') {
+        console.log(eventData.choice1text);
+        console.log(eventData.choice1);
+        console.log(eventData.choice2text);
+        console.log(eventData.choice2);
         choicesArray = [eventData.choice1text, eventData.choice1, eventData.choice2text, eventData.choice2];
+        console.log(choicesArray);
         socket.emit('twoChoiceEvent', {choicesArray});
         socket.on('twoChoiceResponse', ({choiceID}) => {
+            console.log('Choice ID: ' + choiceID);
             choicesUpdate(socket, client, io, choiceID, 'standard', null);
         })
-        if (age === 'Child') {
+        if (age === 'Child') {  
             setType = 'remainder';
         } else if (age === 'Adult') {
             setType = 'eventadult';
@@ -906,7 +913,7 @@ function deleteCardSet(room, client) {
 function addUser(socket, client) {
     let tempUser = getCurrentUser(socket.id);
     const text = 'INSERT INTO users(id, balance, children, traits, married, room, receiving, giving, earning, penalty, college, alive, username) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)';
-    const values = [socket.id, 0, 0, [], null, tempUser.room, 1, 1, 1, 1, 1, true, tempUser.username];
+    const values = [socket.id, 10, 0, [], null, tempUser.room, 1, 1, 1, 1, 1, true, tempUser.username];
     client
         .query(text,values)
         .catch (e => console.error(e.stack));
