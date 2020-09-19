@@ -72,6 +72,32 @@ class scene2 extends Phaser.Scene {
             this.rollButton.setInteractive();
         }
 
+        // Update all player balances
+        socket.on('balanceUpdate', ({usernames, balances}) => {
+            for (let i = 0; i < players.length; i++) {
+                let user = players[i];
+                user.balance = Number(balances[usernames.indexOf(user.name)]);
+            }
+        });
+
+        // Update all player children count
+        socket.on('childrenUpdate', ({usernames, children}) => {
+            for (let i = 0; i < players.length; i++) {
+                let user = players[i];
+                user.childrenCount = Number(children[usernames.indexOf(user.name)]);
+            }
+        });
+
+        // Update all player marital statuses
+        socket.on('marriageUpdate', ({usernames, partners}) => {
+            for (let i = 0; i < players.length; i++) {
+                let user = players[i];
+                if (partners[usernames.indexOf(user.name)] != null) {
+                    user.married = partners[usernames.indexOf(user.name)];
+                }
+            }
+        });
+
         // Landed card variables
         // cardText  : the text displayed on the card
         // cardIcon  : the icon displayed on the card, currently not working
@@ -130,32 +156,6 @@ class scene2 extends Phaser.Scene {
         // Debugging variables
         this.debugText.setText("Turn: " + this.turn + "\nRoll Type: " + rollInfo.type
             + "\nDisplaying card: " + this.displayingCard);
-
-        // Update all player balances
-        socket.on('balanceUpdate', ({usernames, balances}) => {
-            for (let i = 0; i < players.length; i++) {
-                let user = players[i];
-                user.balance = balances[usernames.indexOf(user.username)];
-            }
-        });
-
-        // Update all player children count
-        socket.on('childrenUpdate', ({usernames, children}) => {
-            for (let i = 0; i < players.length; i++) {
-                let user = players[i];
-                user.childrenCount = children[usernames.indexOf(user.username)];
-            }
-        });
-
-        // Update all player marital statuses
-        socket.on('marriageUpdate', ({usernames, partners}) => {
-            for (let i = 0; i < players.length; i++) {
-                let user = players[i];
-                if (partners[usernames.indexOf(user.username)] != null) {
-                    user.married = partners[usernames.indexOf(user.username)];
-                }
-            }
-        });
 
         // update sidebar info
         for (let i = 0; i < players.length; i++) {
