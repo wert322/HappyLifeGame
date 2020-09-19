@@ -25,13 +25,16 @@ async function pullCard(cardtype, age, client, socket, io) {
     let promise2 =  getCardSet(socket, client, 'remainder');
     let promise3 =  getCardSet(socket, client,'eventadult');
     let promise4 =  getCardSet(socket, client, 'eventold');
+    let promise5 = getTraits(client, socket.id);
 
     let partnerID = await promise1;
     let remainderDiscards = await promise2;
     let eventadultDiscards = await promise3;
     let eventoldDiscards = await promise4;
+    let playerTraits = await promise5;
 
     console.log('Partner ID: ' + partnerID + ', Remainder Discards: ' + remainderDiscards+ ', Adult Discards: ' + eventadultDiscards + ', Old Discards: ' + eventoldDiscards);
+    console.log('Start turn user traits: ' + playerTraits);
 
     let currentUser = getCurrentUser(socket.id);
     let room = currentUser.room;
@@ -122,6 +125,9 @@ async function pullCard(cardtype, age, client, socket, io) {
             }
         } else {
             combinedDiscards = combinedDiscards.concat(['EA3', 'EO3']);
+        }
+        if (playerTraits.includes('T6')) {
+            combinedDiscards = combinedDiscards.concat(['EA7']);
         }
         if (eventadultDiscards.length === 8) {
             eventadultDiscards = [];
@@ -241,7 +247,10 @@ async function getTraits(client, id) {
     try {
         const res = await client.query(text, values);
         console.log('Given user traits: ' + res.rows[0].traits);
-        return res.rows[0].traits;
+        let promise = new Promise((resolve, reject) => {
+            resolve(res.rows[0].traits);
+        });
+        return promise;
     } catch (error) {
         console.log(error.stack);
     }
@@ -254,7 +263,10 @@ async function getTraitDetails(client, trait) {
     const values = [trait];
     try {
         const res = await client.query(text, values);
-        return res.rows[0];
+        let promise = new Promise((resolve, reject) => {
+            resolve(res.rows[0]);
+        });
+        return promise;
     } catch (error) {
         console.log(error.stack);
     }
@@ -299,7 +311,9 @@ async function moneyUpdate(cardData, type, socket, io, client) {
             } else {
                 coefficient = await getCoefficient(client, 'earning', socket.id);
             }
+            console.log('PreC value: ' + value + ', Coefficient: ' + coefficient);
             value *= coefficient;
+            console.log('PostC value: ' + value);
             console.log('Earning Coefficient: ' + coefficient + ', Final value: ' + value);
             updateBalance(client, socket, socket.id, value, io, false);
         } 
@@ -316,6 +330,7 @@ async function updateBalance(client, socket, id, sumvalue, io, ignore) {
         console.log('Current balance: ' + balance + '. Value to be added: ' + sumvalue);
         let partnerID = await getPartner(socket, client, io);
         balance += sumvalue;
+        balance = balance.toFixed(2);
         console.log('New balance: ' + balance);
         let text = 'UPDATE users SET balance = $1 WHERE id = $2';
         let values = [balance, id];
@@ -340,7 +355,10 @@ async function getBalance(client, id) {
     const values = [id];
     try {
         const res = await client.query(text, values);
-        return Number(res.rows[0].balance);
+        let promise = new Promise((resolve, reject) => {
+            resolve(Number(res.rows[0].balance));
+        });
+        return promise;
     } catch (error) {
         console.log(error.stack);
     }
@@ -354,18 +372,23 @@ async function getCoefficient(client, header, id) {
     const text = 'SELECT * FROM users WHERE id = $1 LIMIT 1';
 
     try {
+        let value;
         const res = await client.query(text, values);
         if (header === 'receiving') {
-            return Number(res.rows[0].receiving);
+            value = Number(res.rows[0].receiving);
         } else if (header === 'giving') {
-            return Number(res.rows[0].giving);
+            value = Number(res.rows[0].giving);
         } else if (header === 'earning') {
-            return Number(res.rows[0].earning);
+            value = Number(res.rows[0].earning);
         } else if (header === 'penalty') {
-            return Number(res.rows[0].penalty);
+            value =  Number(res.rows[0].penalty);
         } else {
-            return Number(res.rows[0].college);
+            value = Number(res.rows[0].college);
         }
+        let promise = new Promise((resolve, reject) => {
+            resolve(value);
+        });
+        return promise;
     } catch (error) {
         console.log(error.stack)
     }
@@ -547,7 +570,7 @@ async function standardEvent(eventData, socket, client, io, age) {
         choicesArray = [eventData.choice1text, eventData.choice1, eventData.choice2text, eventData.choice2];
         console.log(choicesArray);
         socket.emit('twoChoiceEvent', {choicesArray});
-        socket.on('twoChoiceResponse', ({choiceID}) => {
+        socket.once('twoChoiceResponse', ({choiceID}) => {
             console.log('Choice ID: ' + choiceID);
             choicesUpdate(socket, client, io, choiceID, 'standard', null);
         })
@@ -614,22 +637,27 @@ async function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
     let choice = promise2;
     let partnerID = promise3;
 
+    console.log('Choices User Traits: ' + userTraits);
+    console.log('Choices Choice Details: ' + choice.id + ', ' + choice.description);
+    console.log('Choices Partner ID: ' + partnerID);
+
     let choiceDescription = choice.description;
     let userC;
     let partnerC;
     let thirdC;
 
     if (choiceType === 'standard') {
-        if (choice.factoringid !== 'null' && userTraits.includes(choice.factoringid)) {
+        if (choice.factoringid !== null && userTraits.includes(choice.factoringid)) {
             choiceID = choice.redirectid;
             choice = await getChoiceDetails(client, choiceID);
         }
         if (!choice.effectless) {
-            if (choiceID = 'C41') {
+            if (choiceID === 'C41') {
                 let result = Math.floor(Math.random() * 6 + 1);
                 choice.value *= result;
             } 
             if (choice.money) {
+                console.log('Choices Update value: ' + choice.value);
                 moneyUpdate(choice, 'choice', socket, io, client);
             }
             if (choice.turnchange) {
@@ -637,8 +665,8 @@ async function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
             }
             if (choice.hastrait) {
                 giveTrait(choice.trait, socket.id, io, client);
-                if (marriedStatus !== null) {
-                    giveTrait(choice.trait, marriedStatus, io, client);
+                if (partnerID !== null) {
+                    giveTrait(choice.trait, partnerID, io, client);
                 }
             }
         }
@@ -717,7 +745,7 @@ async function choicesUpdate(socket, client, io, choiceID, choiceType, input) {
         }
         moneyUpdate(choice ,'choice', socket, io, client);
     }
-    io.to(room).emit('showRegularOutcome', choiceDescription);
+    io.to(user.room).emit('showRegularOutcome', choiceDescription);
 }
 
 // ASYNC
@@ -727,7 +755,10 @@ async function getChoiceDetails(client, choiceID) {
     const values = [choiceID];
     try {
         const res = await client.query(text, values);
-        return res.rows[0];
+        let promise = new Promise((resolve, reject) => {
+            resolve(res.rows[0]);
+        });
+        return promise;
     } catch (error) {
         console.log(error.stack);
     }
@@ -823,7 +854,10 @@ async function getMarriedCount(socket, client) {
     const values = [currentRoom];
     try {
         const res = await client.query(text, values);
-        return res.rows[0].count;
+        let promise = new Promise((resolve, reject) => {
+            resolve(res.rows[0].count);
+        });
+        return promise;
     } catch (error) {
         console.log(error.stack);
     }
@@ -872,7 +906,10 @@ async function getChildren(id, client) {
     const values = [id];
     try {
         const res = await client.query(text, values);
-        return res.rows[0].children;
+        let promise = new Promise((resolve, reject) => {
+            resolve(res.rows[0].children);
+        });
+        return promise;
     } catch (error) {
         console.log(error.stack);
     }
@@ -885,7 +922,10 @@ async function getAlive(id, client) {
     const values = [id];
     try {
         const res = await client.query(text, values);
-        return res.rows[0].alive;
+        let promise = new Promise((resolve, reject) => {
+            resolve(res.rows[0].alive);
+        });
+        return promise;
     } catch (error) {
         console.log(error.stack);
     }

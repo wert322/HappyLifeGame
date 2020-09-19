@@ -441,13 +441,13 @@ class scene2 extends Phaser.Scene {
 
     option1ButtonPressed() {
         this.hide2OptionButtons();
-        socket.emit('twoChoiceResponse', rollInfo.optionIDs[0]);
+        socket.emit('twoChoiceResponse', {choiceID:rollInfo.optionIDs[0]});
         this.setupNextTurn();
     }
 
     option2ButtonPressed() {
         this.hide2OptionButtons();
-        socket.emit('twoChoiceResponse', rollInfo.optionIDs[1]);
+        socket.emit('twoChoiceResponse', {choiceID:rollInfo.optionIDs[1]});
         this.setupNextTurn();
     }
 
