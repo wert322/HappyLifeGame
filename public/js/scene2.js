@@ -401,13 +401,24 @@ class scene2 extends Phaser.Scene {
 
     // format player text for side text info
     formatPlayerText(index) {
+        let text = "     " + players[index].name + "\nBalance: ";
         let balance = "";
-        // if (players[index].balance >= 0) {
-        //     balance = ("000000" + players[index].balance).slice(-6);
-        // } else {
-        //     balance = "-" + ("000000" + players[index].balance * -1).slice(-5);
-        // }
-        return ("     " + players[index].name + "\nBalance: " + players[index].balance + " M¥");
+        if (players[index].balance >= 0) {
+            balance = ("000000" + players[index].balance).slice(-6);
+        } else {
+            balance = "-" + ("000000" + players[index].balance * -1).slice(-5);
+        }
+        text += balance + " Million 円\nTraits: ";
+        for (let i = 0; i < players[index].traits.length; i++) {
+            text += players[index].traits[i];
+            if (i < players[index].traits.length - 1) {
+                text += ', ';
+            }
+        }
+        if (players[index].married !== "") {
+            text += "\nMarried to: " + players[index].married + "   Children: " + players[index].childrenCount;
+        }
+        return text;
     }
 
     rollButtonPressed() {
