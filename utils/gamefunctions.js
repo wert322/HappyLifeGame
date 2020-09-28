@@ -813,18 +813,13 @@ async function getPartner(socket, client, io) {
 // Handles the marriage event. Handles the checking of if they have the distrust trait and if they do, it prevents marriage while also removing those trait cards from their arrays
 async function marriageCard(socket, client, io) {
     socket.emit('getPartnerEvent', {filler: true});
-    socket.on('getPartnerResponse', async ({pID}) => {
-        try {
-            var userTraits = await getTraits(client, socket.id);
-        } catch (error) {
-            console.log(error.stack);
-        }
-        try {
-            var partnerTraits = await getTraits(client, pID);
-        } catch (error) {
-            console.log(error.stack);
-        }
+    socket.on('getPartnerResponse', async ({partnerName}) => {
 
+        let currentRoom = getCurrentUser(socket.id).room;
+        var pID = await getPartnerID(currentRoom, client, partnerName);
+        var userTraits = await getTraits(client, socket.id);
+        var partnerTraits = await getTraits(client, pID);
+   
         if (!userTraits.includes('T2') || !partnerTraits.includes('T2')) {
             updateMarriage(pID, client, io, socket.id);
             updateMarriage(socket.id, client, io, pID);
@@ -846,6 +841,24 @@ async function marriageCard(socket, client, io) {
     });
 }
 
+// ASYNC
+// Returns the id of the partner
+async function getPartnerID(currentRoom, client, partnerName) {
+    const text = 'SELECT id FROM users WHERE room = $1 AND username = $2';
+    const values = [currentRoom, partnerName];
+    console.log('getPartnerID: ' + currentRoom + ', ' + partnerName);
+    try {
+        const res = await client.query(text, values);
+        let promise = new Promise((resolve, reject) => {
+            console.log(res.rows[0]);
+            resolve(res.rows[0].id);
+            console.log('Partner ID: ' + res.rows[0].id);
+        })
+        return promise;
+    } catch (error) {
+        console.log(error.stack);
+    }
+}
 // ASYNC
 // Returns the number of married people in a room. Decides if marriage cards can still be landed on
 async function getMarriedCount(socket, client) {
