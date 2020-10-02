@@ -157,11 +157,9 @@ class scene2 extends Phaser.Scene {
         socket.on('showRegularOutcome', (resultText) => {
             var playerName = players[this.turn].name;
             var marriedName = players[this.turn].married;
-            if (this.turn !== userID) {
-                resultText = resultText.replace('/your/g', playerName + "'s").replace('/you/g', playerName);
-            }
+            resultText = resultText.replace(/your/gi, playerName + "'s").replace(/you/gi, playerName);
             if (marriedName !== "") {
-                resultText = resultText.replace('/partnername/g', marriedName);
+                resultText = resultText.replace(/partnername/g, marriedName);
             }
             this.textBox.setText(resultText);
             this.blankCard.setInteractive();
