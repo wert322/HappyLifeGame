@@ -88,13 +88,14 @@ io.on('connection', socket => {
     socket.on('getSize', (filler) => { 
         var adjustedRoomList = [];
         var memberCount = new Array();
+        console.log(lockedRoomList);
         for (i = 0; i < roomList.length; i++) {
             if (!lockedRoomList.includes(roomList[i])) {
                 memberCount.push(getRoomUsers(roomList[i]).length);
                 adjustedRoomList.push(roomList[i]);
             }
         }
-        socket.emit('getSizeOutput', {memberCount, adjustedRoomList});
+        socket.emit('getSizeOutput', {memberCount, roomList: adjustedRoomList});
     });
 
     // Listens for and returns all users in the room
@@ -117,10 +118,10 @@ io.on('connection', socket => {
         if (user && getRoomUsers(user.room).length === 0) {
             deleteCardSet(user.room, client);
             var indexPlace = roomList.indexOf(user.room);
+            var lockedIndexPlace = lockedRoomList.indexOf(user.room);
             if (indexPlace > -1) {
                 roomList.splice(indexPlace, 1);
             };
-            var lockedIndexPlace = lockedRoomList.indexOf(user.room);
             if (lockedIndexPlace > -1) {
                 lockedRoomList.splice(lockedIndexPlace, 1);
             }
@@ -140,7 +141,9 @@ io.on('connection', socket => {
     // Listens for game start and locks the room
     socket.on('gameStart', (filler) => {
         const user = getCurrentUser(socket.id);
-        lockedRoomList.push(user.room);
+        if (!lockedRoomList.includes(user.room)) {
+            lockedRoomList.push(user.room);
+        }
         // code to lock the room here (TO BE IMPLEMENTED LATER)
         io.to(user.room).emit('startGame', true);
     });
