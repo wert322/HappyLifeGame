@@ -569,7 +569,7 @@ async function standardEvent(eventData, socket, client, io, age) {
         console.log(eventData.choice2);
         choicesArray = [eventData.choice1text, eventData.choice1, eventData.choice2text, eventData.choice2];
         console.log(choicesArray);
-        socket.emit('twoChoiceEvent', {choicesArray});
+        io.to(room).emit('twoChoiceEvent', {choicesArray});
         socket.once('twoChoiceResponse', ({choiceID}) => {
             console.log('Choice ID: ' + choiceID);
             choicesUpdate(socket, client, io, choiceID, 'standard', null);
