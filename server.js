@@ -128,6 +128,13 @@ io.on('connection', socket => {
         }
     });
 
+    // Listens for game start and locks the room
+    socket.on('gameStart', (filler) => {
+        const user = getCurrentUser(socket.id);
+        // code to lock the room here (TO BE IMPLEMENTED LATER)
+        io.to(user.room).emit('startGame', true);
+    });
+
     // Listens for game turn
     socket.on('gameTurn', ({playerID, dieValue, cardType, cardAge}) => {
         console.log('');
@@ -145,7 +152,9 @@ io.on('connection', socket => {
 
     // Listens for game end
     socket.on('gameEnd', (filler) => {
+        const user = getCurrentUser(socket.id);
         tabulatePlayers(client, socket, io);
+        io.to(user.room).emit('endGame', true);
     });
 });
 

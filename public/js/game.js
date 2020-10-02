@@ -5,6 +5,7 @@ const moveForwardOneCardTime = 250; // Time needed to move player token up by on
 const cardFlipTime = 500; // Time needed to flip landed card
 const canvasWidth = 1920; // Width of the canvas
 const canvasHeight = 1080; // Height of the canvas
+const playerUpdateDelayCounter = 10000; // Counter used for updating player room
 const debugMode = true; // debug mode (shows certain variable info in top left)
 
 // user colors: red         orange      yellow      green       light blue  blue

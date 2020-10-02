@@ -4,7 +4,7 @@ class scene2 extends Phaser.Scene {
     }
 
     preload() {
-        // All the cards used
+        // draw all the cards used
         this.load.image('cardChildEvent', 'images/child_event_card.png');
         this.load.image('cardChildMisfortune', 'images/child_misfortune_card.png');
         this.load.image('cardChildLucky', 'images/child_lucky_card.png');
@@ -24,27 +24,27 @@ class scene2 extends Phaser.Scene {
         this.debugText = this.add.text(0, 0, "", {fontSize: "20px", fontFamily: "Roboto"}).setOrigin(0);
         this.debugText.visible = debugMode;
 
-        // Set up cards
+        // set up cards
         this.cardList = this.setupCards();
         let cards = this.setupBoard();
         this.allCardsContainer = this.add.container(0, 0, cards);
 
-        // Keyboard inputs
+        // keyboard inputs
         this.keyboard = this.input.keyboard.addKeys("LEFT,RIGHT");
 
-        // Game variables
+        // game variables
         this.boardOffset = 0;
         this.turn = 0; // whose turn it is (based off user ID)
         this.displayingCard = false; // currently displaying a card on the screen or not
 
-        // Add user piece to board in a player container
+        // add user piece to board in a player container
         this.allPlayersContainer = this.add.container(0, 0);
         for (let i = 0; i < players.length; i++) {
             let playerPiece = this.add.rectangle(this.cardList[0].xpos, this.cardList[0].ypos, 50, 50, players[i].playerColor);
             this.allPlayersContainer.add(playerPiece);
         }
 
-        // Game side display
+        // game side display
         this.sideInfo = this.add.rectangle(canvasWidth * 0.875, 0, canvasWidth / 4, 900, "0xFFE3F6").setOrigin(0.5, 0);
         this.allPlayerInfoText = this.add.container(0, 0);
         for (let i = 0; i < players.length; i++) {
@@ -53,18 +53,18 @@ class scene2 extends Phaser.Scene {
             this.allPlayerInfoText.add(playerInfoText);
         }
 
-        // Text box (note that 4 lines is the max currently)
+        // text box (note that 4 lines is the max currently)
         this.textBoxArea = this.add.rectangle(0, 900, canvasWidth, canvasHeight - 900, "0xFF7AD9").setOrigin(0);
         this.textBox = this.add.text(canvasWidth / 2, 910, "", {fontSize: "40px", fontFamily: "Roboto", wordWrap: {width: (canvasWidth * 0.8)}, useAdvancedWrap: true}).setOrigin(0.5,0);
 
-        // Roll Button
+        // roll Button
         this.rollButton = this.add.rectangle(canvasWidth / 2, 970, canvasWidth / 3, 90, "0xFFBFEA").setOrigin(0.5, 0);
         this.rollButton.visible = false;
         this.rollButtonText = this.add.text(canvasWidth / 2, 980, "Roll", {fontSize: "70px", fontFamily: "Roboto"}).setOrigin(0.5, 0);
         this.rollButtonText.visible = false;
         this.rollButton.on('pointerdown', this.rollButtonPressed, this);
 
-        // If first player, show the your turn text
+        // if first player, show the your turn text
         if (userID === 0) {
             this.textBox.setText("Your turn! Press the button to roll the die.");
             this.rollButton.visible = true;
@@ -72,33 +72,7 @@ class scene2 extends Phaser.Scene {
             this.rollButton.setInteractive();
         }
 
-        // Update all player balances
-        socket.on('balanceUpdate', ({usernames, balances}) => {
-            for (let i = 0; i < players.length; i++) {
-                let user = players[i];
-                user.balance = Number(balances[usernames.indexOf(user.name)]);
-            }
-        });
-
-        // Update all player children count
-        socket.on('childrenUpdate', ({usernames, children}) => {
-            for (let i = 0; i < players.length; i++) {
-                let user = players[i];
-                user.childrenCount = Number(children[usernames.indexOf(user.name)]);
-            }
-        });
-
-        // Update all player marital statuses
-        socket.on('marriageUpdate', ({usernames, partners}) => {
-            for (let i = 0; i < players.length; i++) {
-                let user = players[i];
-                if (partners[usernames.indexOf(user.name)] != null) {
-                    user.married = partners[usernames.indexOf(user.name)];
-                }
-            }
-        });
-
-        // Landed card variables
+        // landed card variables
         // cardText  : the text displayed on the card
         // cardIcon  : the icon displayed on the card, currently not working
         // blankCard : the blank card used on card flip
@@ -110,7 +84,45 @@ class scene2 extends Phaser.Scene {
         this.blankCard.on('pointerdown', this.setupNextTurn, this);
         this.blankCard.visible = false;
 
-        // Get roll info from other players in the room
+        // two choice option variables
+        this.option1Button = this.add.rectangle(20, 920, 930, 140, "0xFF9FE0").setOrigin(0);
+        this.option1ButtonText = this.add.text(485, 930, "", {fontSize: "40px", fontFamily: "Roboto", wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
+        this.option2Button = this.add.rectangle(970, 920, 930, 140, "0xFF9FE0").setOrigin(0);
+        this.option2ButtonText = this.add.text(1435, 930, "", {fontSize: "40px", fontFamily: "Roboto", wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
+        this.option1Button.visible = false;
+        this.option1ButtonText.visible = false;
+        this.option2Button.visible = false;
+        this.option2ButtonText.visible = false;
+        this.option1Button.on('pointerdown', this.option1ButtonPressed, this);
+        this.option2Button.on('pointerdown', this.option2ButtonPressed, this);
+
+        // update all player balances
+        socket.on('balanceUpdate', ({usernames, balances}) => {
+            for (let i = 0; i < players.length; i++) {
+                let user = players[i];
+                user.balance = Number(balances[usernames.indexOf(user.name)]);
+            }
+        });
+
+        // update all player children count
+        socket.on('childrenUpdate', ({usernames, children}) => {
+            for (let i = 0; i < players.length; i++) {
+                let user = players[i];
+                user.childrenCount = Number(children[usernames.indexOf(user.name)]);
+            }
+        });
+
+        // update all player marital statuses
+        socket.on('marriageUpdate', ({usernames, partners}) => {
+            for (let i = 0; i < players.length; i++) {
+                let user = players[i];
+                if (partners[usernames.indexOf(user.name)] != null) {
+                    user.married = partners[usernames.indexOf(user.name)];
+                }
+            }
+        });
+
+        // get roll info from other players in the room
         socket.on('updateOtherGameUsers', ({ playerID, dieValue }) => {
             if (this.displayingCard) {
                 this.setupNextTurn();
@@ -125,35 +137,43 @@ class scene2 extends Phaser.Scene {
             }
         });
 
-        // If the landed card was a regular card, run this
+        // if the landed card was a regular card, simulate the turn
         socket.on('showRegularCard', ({cardDescription, iconCode}) => {
             // iconCode = '\uf368 '; // temp testing
             this.simulateTurn(rollInfo.playerID, rollInfo.roll, cardDescription, iconCode);
         });
 
-        // Two choice option
-        this.option1Button = this.add.rectangle(20, 920, 930, 140, "0xFF9FE0").setOrigin(0);
-        this.option1ButtonText = this.add.text(485, 930, "", {fontSize: "40px", fontFamily: "Roboto", wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
-        this.option2Button = this.add.rectangle(970, 920, 930, 140, "0xFF9FE0").setOrigin(0);
-        this.option2ButtonText = this.add.text(1435, 930, "", {fontSize: "40px", fontFamily: "Roboto", wordWrap: {width: 910}, useAdvancedWrap: true}).setOrigin(0.5, 0);
-        this.option1Button.visible = false;
-        this.option1ButtonText.visible = false;
-        this.option2Button.visible = false;
-        this.option2ButtonText.visible = false;
-        this.option1Button.on('pointerdown', this.option1ButtonPressed, this);
-        this.option2Button.on('pointerdown', this.option2ButtonPressed, this);
-
-        // If the landed card was a two choice event, run this
+        // if the landed card was a two choice event, set rollInfo to two choice and get all required info stored
         socket.on('twoChoiceEvent', ({choicesArray}) => {
             rollInfo.type = "twoChoice";
-            rollInfo.optionIDs = [choicesArray[1], choicesArray[3]];
-            this.option1ButtonText.setText(choicesArray[0]);
-            this.option2ButtonText.setText(choicesArray[2]);
+            if (userID === this.turn) {
+                rollInfo.optionIDs = [choicesArray[1], choicesArray[3]];
+                this.option1ButtonText.setText(choicesArray[0]);
+                this.option2ButtonText.setText(choicesArray[2]);
+            }
+        });
+
+        // for non-regular card outcome text, reformat the string for everyone and show in text box
+        socket.on('showRegularOutcome', (resultText) => {
+            var playerName = players[this.turn].name;
+            var marriedName = players[this.turn].married;
+            if (this.turn !== userID) {
+                resultText = resultText.replace('/your/g', playerName + "'s").replace('/you/g', playerName);
+            }
+            if (marriedName !== "") {
+                resultText = resultText.replace('/partnername/g', marriedName);
+            }
+            this.textBox.setText(resultText);
+            this.blankCard.setInteractive();
+        });
+
+        socket.on('endGame', (filler) => {
+            this.scene.scene.start("endGame");
         });
     }
 
     update() {
-        // Debugging variables
+        // debugging variables
         this.debugText.setText("Turn: " + this.turn + "\nRoll Type: " + rollInfo.type
             + "\nDisplaying card: " + this.displayingCard);
 
@@ -293,6 +313,7 @@ class scene2 extends Phaser.Scene {
         });
     }
 
+    // flips the landed card to halfway
     flipLandedCard(tween, targets, self, card, cardDescription, iconCode) {
         self.tweens.add({
             targets: card,
@@ -306,6 +327,7 @@ class scene2 extends Phaser.Scene {
         });
     }
 
+    // flips the landed card all the way, along with text
     flipLandedCard2(tween, targets, self, card, cardDescription, iconCode) {
         card.destroy();
         // card text
@@ -345,11 +367,12 @@ class scene2 extends Phaser.Scene {
         });
     }
 
+    // finishes up the card flip animation and sets up the user for an emit depending if it is a standard card or not
     cardAnimationEnd(tween, targets, self, cardDescription) {
         self.displayingCard = true;
         if (rollInfo.type === "regular") {
             self.blankCard.setInteractive();
-        } else if (rollInfo.type === "twoChoice") {
+        } else if (rollInfo.type === "twoChoice" && userID === self.turn) {
             self.twoChoice(self);
         }
     }
@@ -421,6 +444,7 @@ class scene2 extends Phaser.Scene {
         return text;
     }
 
+    // when roll button is pressed, hide it, get roll value, and send the info to everyone
     rollButtonPressed() {
         this.rollButtonText.visible = false;
         this.rollButton.visible = false;
@@ -430,7 +454,6 @@ class scene2 extends Phaser.Scene {
         if (players[userID].location + dieValue >= 100) {
             players[userID].location = 100;
             socket.emit('gameEnd', (true));
-            this.scene.scene.start("endGame");
         } else { // game has not ended yet, so run a turn
             let location = this.getLandedCardLocation(players[userID].location, dieValue);
             let playerID = userID;
@@ -440,6 +463,7 @@ class scene2 extends Phaser.Scene {
         }
     }
 
+    // if two choice card was landed, set up the screen with the options
     twoChoice(self) {
         self.textBox.setText("");
         self.option1Button.visible = true;
@@ -450,18 +474,19 @@ class scene2 extends Phaser.Scene {
         self.option2Button.setInteractive();
     }
 
+    // if option 1 was pressed send that to the server and fix the screen
     option1ButtonPressed() {
         this.hide2OptionButtons();
         socket.emit('twoChoiceResponse', {choiceID:rollInfo.optionIDs[0]});
-        this.setupNextTurn();
     }
 
+    // if option 2 was pressed send that to the server and fix the screen
     option2ButtonPressed() {
         this.hide2OptionButtons();
         socket.emit('twoChoiceResponse', {choiceID:rollInfo.optionIDs[1]});
-        this.setupNextTurn();
     }
 
+    // after two choice option is picked, clean up the screen by hiding two buttons
     hide2OptionButtons() {
         this.option1Button.visible = false;
         this.option1ButtonText.visible = false;
@@ -469,6 +494,5 @@ class scene2 extends Phaser.Scene {
         this.option2ButtonText.visible = false;
         this.option1Button.disableInteractive();
         this.option2Button.disableInteractive();
-        this.displayingCard = false;
     }
 }

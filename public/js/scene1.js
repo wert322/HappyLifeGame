@@ -8,25 +8,41 @@ class scene1 extends Phaser.Scene {
         this.load.image("startButton", "images/start_button.png");
     }
 
-    create() {        
-        this.started = false;
+    create() {
+        // counter used to update room players
+        this.updateRoomNumber = 0;
 
-        // Start screen title and buttons
+        // start screen title and buttons
         this.title = this.add.text(canvasWidth / 2, 100, "Happy Life Game", {font: "128px Roboto", align: "center"}).setOrigin(0.5);
         // this.add.sprite(150, 100, "logo").setOrigin(0.5).setScale(0.25);
         
-        // Start button
+        // set up start button to start game on press if 2+ players in the room
         this.startButton = this.add.sprite(canvasWidth / 2, canvasHeight - 150, "startButton").setOrigin(0.5);
         this.notEnoughPlayers = this.add.text(canvasWidth / 2, canvasHeight - 250, "Need another player", {font: "48px Roboto", color: '#ff2626', align: "center"}).setOrigin(0.5);
         this.notEnoughPlayers.alpha = 0;
+        this.startButton.setInteractive();
+        var self = this;
+        this.startButton.on('pointerdown', function() {
+            if (players.length < 2) {
+                self.needPlayer(self);
+            } else if (!self.started) { // players.length >= 2
+                socket.emit("gameStart", true);
+                this.scene.scene.start("playGame");
+            }
+        });
 
-        // Update player list when room users changes
+        // update player list when room users changes
         socket.on('roomUsers', ({ room, users }) => {
             this.sys.game.scale.setGameSize(canvasWidth, canvasHeight);
             this.updatePlayerList(users);
         });
 
-        // Display users in the room
+        // on game start automatically start the game
+        socket.on('startGame', ({filler}) => {
+            this.scene.scene.start("playGame");
+        });
+
+        // display users in the room
         this.add.rectangle(canvasWidth / 2, canvasHeight / 2, canvasWidth / 2, canvasHeight / 2, "0xffffff").setOrigin(0.5);
         // Container for users
         this.allUserInfoText = this.add.container(0, 0);
@@ -35,26 +51,19 @@ class scene1 extends Phaser.Scene {
             let userText = this.add.text(580 + 450 * (i % 2), 320 + 200 * Math.round((i - 1) / 2), "", {font: "50px Roboto", color: "#111111"}).setOrigin(0, 0.5);
             this.allUserInfoText.add(userText);
         }
-        
-        var self = this;
-        this.startButton.setInteractive();
-        this.startButton.on('pointerdown', function() {
-            if (players.length < 2) {
-                self.needPlayer(self);
-            } else if (!self.started) { // players.length >= 2
-                self.started = true;
-                // add emit to lock the room here
-                this.scene.scene.start("playGame");
-            }
-        });
 
+        // used to fix the scaling glitch
         this.sys.game.scale.setGameSize(canvasWidth, canvasHeight);
     }
 
     update() {
-        // if (players.length === 0) {
-        //     socket.emit("getRoomUsers", true);
-        // }
+        if (players.length === 0 && this.updateRoomNumber < playerUpdateDelayCounter) {
+            this.updateRoomNumber++;
+            if (this.updateRoomNumber === playerUpdateDelayCounter) {
+                console.log("this was run");
+                socket.emit("getRoomusers", true);
+            }
+        }
         for (let i = 0; i < 6; i++) {
             let userText = this.allUserInfoText.getAt(i);
             if (i < players.length) {
@@ -87,6 +96,7 @@ class scene1 extends Phaser.Scene {
         }
     }
 
+    // if not enough players in the room, show the message
     needPlayer(self) {
         self.notEnoughPlayers.alpha = 1;
         self.tweens.add({
