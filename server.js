@@ -14,6 +14,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const botName = 'Server';
 var roomList = [];
+var lockedRoomList = [];
 
 const {Client} = require('pg');
 const client = new Client({
@@ -85,11 +86,15 @@ io.on('connection', socket => {
 
     // Listens for and returns the number of people in all rooms of a given array
     socket.on('getSize', (filler) => { 
+        var adjustedRoomList = [];
         var memberCount = new Array();
         for (i = 0; i < roomList.length; i++) {
-            memberCount.push(getRoomUsers(roomList[i]).length);
-        };
-        socket.emit('getSizeOutput', {memberCount, roomList});
+            if (!lockedRoomList.includes(roomList[i])) {
+                memberCount.push(getRoomUsers(roomList[i]).length);
+                adjustedRoomList.push(roomList[i]);
+            }
+        }
+        socket.emit('getSizeOutput', {memberCount, adjustedRoomList});
     });
 
     // Listens for and returns all users in the room
@@ -115,6 +120,10 @@ io.on('connection', socket => {
             if (indexPlace > -1) {
                 roomList.splice(indexPlace, 1);
             };
+            var lockedIndexPlace = lockedRoomList.indexOf(user.room);
+            if (lockedIndexPlace > -1) {
+                lockedRoomList.splice(lockedIndexPlace, 1);
+            }
         };
         
         if(user) {
@@ -131,6 +140,7 @@ io.on('connection', socket => {
     // Listens for game start and locks the room
     socket.on('gameStart', (filler) => {
         const user = getCurrentUser(socket.id);
+        lockedRoomList.push(user.room);
         // code to lock the room here (TO BE IMPLEMENTED LATER)
         io.to(user.room).emit('startGame', true);
     });
