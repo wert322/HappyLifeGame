@@ -9,8 +9,12 @@ class scene1 extends Phaser.Scene {
     }
 
     create() {
+            // debug tools
+            this.debugText = this.add.text(0, 0, "", {fontSize: "20px", fontFamily: "Roboto"}).setOrigin(0);
+            this.debugText.visible = debugMode;
+
         // counter used to update room players
-        this.updateRoomNumber = 0;
+        this.updateRoomCounter = 0;
 
         // start screen title and buttons
         this.title = this.add.text(canvasWidth / 2, 100, "Happy Life Game", {font: "128px Roboto", align: "center"}).setOrigin(0.5);
@@ -57,11 +61,14 @@ class scene1 extends Phaser.Scene {
     }
 
     update() {
-        if (players.length === 0 && this.updateRoomNumber < playerUpdateDelayCounter) {
-            this.updateRoomNumber++;
-            if (this.updateRoomNumber === playerUpdateDelayCounter) {
+        // debugging variables
+        this.debugText.setText("updateRoomCounter: " + this.updateRoomCounter);
+
+        if (players.length === 0 && this.updateRoomCounter < updateRoomCounterMax) {
+            this.updateRoomCounter++;
+            if (this.updateRoomCounter === updateRoomCounterMax) {
                 console.log("this was run");
-                socket.emit("getRoomusers", true);
+                socket.emit("getRoomUsers", true);
             }
         }
         for (let i = 0; i < 6; i++) {
