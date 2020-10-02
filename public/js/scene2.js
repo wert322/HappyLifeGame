@@ -166,7 +166,7 @@ class scene2 extends Phaser.Scene {
         });
 
         socket.on('endGame', (filler) => {
-            this.scene.scene.start("endGame");
+            this.scene.start("endGame");
         });
     }
 
@@ -440,6 +440,21 @@ class scene2 extends Phaser.Scene {
             text += "\nMarried to: " + players[index].married + "   Children: " + players[index].childrenCount;
         }
         return text;
+    }
+
+    // get nearest player to inputted player ID
+    getNearestPlayer(playerID) {
+        playerDistance = new Array(players.length);
+        for (let i = 0; i < players.length; i++) {
+            playerDistance[i] = Math.abs(players[i].location - players[playerID].location);
+        }
+        var nearestID = -1;
+        for (let i = 0; i < players.length; i++) {
+            if (i !== playerID && players[i].married === "" && (closestID === -1 || playerDistance[closestID] > playerDistance[i])) {
+                nearestID = i;
+            }
+        }
+        return nearestID;
     }
 
     // when roll button is pressed, hide it, get roll value, and send the info to everyone

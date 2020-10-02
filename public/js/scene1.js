@@ -43,7 +43,7 @@ class scene1 extends Phaser.Scene {
 
         // on game start automatically start the game
         socket.on('startGame', ({filler}) => {
-            this.scene.scene.start("playGame");
+            this.scene.start("playGame");
         });
 
         // display users in the room
@@ -67,7 +67,6 @@ class scene1 extends Phaser.Scene {
         if (players.length === 0 && this.updateRoomCounter < updateRoomCounterMax) {
             this.updateRoomCounter++;
             if (this.updateRoomCounter === updateRoomCounterMax) {
-                console.log("this was run");
                 socket.emit("getRoomUsers", true);
             }
         }
