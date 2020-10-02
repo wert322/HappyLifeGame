@@ -1,48 +1,34 @@
 # HappyLifeGame
-Cooperative JB project
+Cooperative project between Jonathan and Brandon.
 
+## Description 
+Multiplayer, turn-based tabletop game based on the fictional "Happy Life Game" from the Kaguya-sama: Love is War anime/manga series. This is our attempt at bringing it to life in a playable format that can be enjoyed with friends. Creative liberties are taken with card and game design due to insufficient canon information existing.
 
-What we know:
-- 99 cards total (33 each in child zone, adult zone, and old age zone)
-    - begins at start
-    - alternates between lucky, !, bad luck, !
-    - ends at goal
-- Every turn, move forward by using a standard die
-    - land on lucky or bad luck card: roll again to determine what happens
-    - land on ! card: tbd
-- Victory: player who reaches goal with most money wins
-- First to reach the goal gets a bonus 100 million yen
-- 10 types of cards
-- Known cards
-    - On the lucky side
-        1. Scammed but won lawsuit for 10 million yen
-            - Gained "Distrusts men" trait card
-        2. Company they founded was successful
-            - 10 million yen
-        3. Company they founded is listed on stock exchange
-            - 100 million yen
-    - On the bad luck side
-        1. Traffic incident
-            - Possibility of instant death
-    - Event cards
-        1. School event
-            - Choose between studying or going, studying yields "SWOT/Nerd card"
-        2. Late divorce from cheating husband
-            - Husband has to pay 20 million yen per kid as child support
-        3. Have children
-            - 100 thousand yen from the other competitors as a gift
-            - Apparently too many children cards 
-        4. Marriage
-            - Requires all other players to gift 50000 yen as a wedding gift
-    - Unknown cards
-        1. Some kind of pet card
-    - Trait cards
-        1. Nerd/SWOT card
-            - Allows you entrance into a prestigious university (Stanford)
-        2. Can't trust men card
-            - Prevents the player from marrying guys
-- Possible problems to consider
-    1. Landing on a child square without being married
-    2. Landing on married square if you are already married
-    3. If you obtain a "Distrusts men" card but there are no other female players
-    4. There is nobody available to marry
+## Motivation
+This project is an attempt by us to use what we've learned in a more real-world application. A lot of knowledge was picked up during the course of programming this and we're always learning more in an effort to improve and streamline this game.
+
+## Prerequisites
+* Express
+* pg
+* phaser 
+* socket.io
+* Node.js
+* HTML, CSS, Javascript, SQL
+
+## Tech Used
+Built using
+* Socket.io
+* Phaser.js
+* Express
+* pg (PostgreSQL)
+* Node.js
+* Heroku web app environment
+
+## Features
+Includes dynamically updating lobbies on the lobby page. As lobbies are created, the page will update automatically and show all available lobbies, along with a current player count. Players can choose to create their own lobby or join an existing one. When lobbies empty out, they are deleted and no longer appear on the list. This is automatically updated as well. A backend PostgreSQL database holds important user information and card information, and user information is automatically cleared when their game ends or when they choose to exit the game via any means.
+
+## Contribute
+We are not seeking contributions as this project is intended to be a static showcase of our current abilities. However, if there are bugs or other significant issues, we are welcome to notifications or suggestions about them.
+
+## License
+MIT © Brandon M. & Jonathan Z.
