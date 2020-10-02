@@ -34,7 +34,8 @@ io.on('connection', socket => {
     // Checks if the room is full and responds with an appropriate signaling event
     socket.on('joinTest', ({room}) => {
         var isFull = (getRoomUsers(room).length > 5);
-        socket.emit('joinTestResponse', isFull);
+        var roomLocked = lockedRoomList.includes(room);
+        socket.emit('joinTestResponse', {isFull, roomLocked});
     });
 
     socket.on('joinRoom', ({username, room}) => {
@@ -95,7 +96,7 @@ io.on('connection', socket => {
                 adjustedRoomList.push(roomList[i]);
             }
         }
-        socket.emit('getSizeOutput', {memberCount, roomList: adjustedRoomList});
+        socket.emit('getSizeOutput', {memberCount, roomList: adjustedRoomList, lockedRooms: lockedRoomList});
     });
 
     // Listens for and returns all users in the room
@@ -146,6 +147,7 @@ io.on('connection', socket => {
         }
         // code to lock the room here (TO BE IMPLEMENTED LATER)
         io.to(user.room).emit('startGame', true);
+        io.emit('updateRooms', {filler: true});
     });
 
     // Listens for game turn

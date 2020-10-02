@@ -1,3 +1,4 @@
+
 const roomDoc = document.getElementById('rooms');
 const roomFormInput = document.getElementById('room-text');
 const roomFormButtons = document.getElementsByName('room-option');
@@ -7,10 +8,10 @@ const socket = io();
 socket.emit('getSize',{filler: true});
 
 // Captures the map of rooms and their sizes, along with a list of the rooms
-socket.on('getSizeOutput', ({memberCount, roomList}) => {
+socket.on('getSizeOutput', ({memberCount, roomList, lockedRooms}) => {
     console.log(memberCount.toString());
     console.log(roomList.toString());
-    outputRoomList(memberCount, roomList);
+    outputRoomList(memberCount, roomList, lockedRooms);
 });
 
 socket.on('updateRooms', ({filler}) => {
@@ -18,7 +19,9 @@ socket.on('updateRooms', ({filler}) => {
 });
 
 // Adds roomlist to startgame DOM
-function outputRoomList(memberCount, roomList) {
+function outputRoomList(memberCount, roomList, lockedRooms) {
+    const roomListLength = roomList.length;
+    roomList = roomList.concat(lockedRooms);
     if (roomList.length === 0) {
         roomDoc.textContent='No rooms are currently available';
     } else {
@@ -34,7 +37,12 @@ function outputRoomList(memberCount, roomList) {
             } else {
                 button.setAttribute('id', 'listButtonsTwo');
             }
-            button.appendChild(document.createTextNode(roomList[i] + ": " + memberCount[i] + "/6 users"));
+            if (i < roomListLength) {
+                button.appendChild(document.createTextNode(roomList[i] + ": " + memberCount[i] + "/6 users"));
+            } else {
+                button.appendChild(document.createTextNode(roomList[i] + ": Game in progress."));
+                button.setAttribute('disabled', true);
+            }
             li.appendChild(button);
             fragment.appendChild(li);
         }
