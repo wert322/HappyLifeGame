@@ -416,11 +416,12 @@ function updateCoefficient(client, header, id, value) {
 // ASYNC
 // Used for good mobility cards, which add a few extra spaces to the next turn
 async function goodMobility(goodData, socket, io, client) {
+    let room = getCurrentUser(socket.id).room;
     let partnerID = await getPartner(socket, client, io);
     var squaresNumber = goodData.squares;
-    socket.emit('addSpacesNext', {tempSquares});
+    io.to(room).emit('addSpacesNext', {tempSquares, filler: true});
     if (partnerID !== null) {
-        socket.to(partnerID).emit('addSpacesNext', {squaresNumber});
+        io.to(room).emit('addSpacesNext', {squaresNumber, filler: false});
     }
 }
 
@@ -439,20 +440,20 @@ async function suddenDeath(cardData, socket, client, io, id) {
         client
             .query(text, values)
             .catch(e => console.error(e.stack));
-        resultPhrase = resultPhrase + ' and as a result, you have died. Better luck next time!';
-        socket.emit('deathEvent', {filler: true});
+        resultPhrase = resultPhrase + ' and as a result, you has died. Better luck next time!';
+        io.to(room).emit('deathEvent', {filler: true});
         if (partnerID !== null) {
             values = [false, partnerID];
             client
                 .query(text, values)
                 .catch(e=> console.error(e.stack));
-            socket.to(partnerID).emit('deathEvent', {filler: true});
+            io.to(room).emit('deathEvent', {filler: false});
         }
     } else {
         let value = cardData.value;
         let coefficient = await getCoefficient(client, 'penalty', id);
         value *= coefficient;
-        resultPhrase = resultPhrase + '. You survive, but you pay ' + value + ' million yen in medical fees.';
+        resultPhrase = resultPhrase + '. You survives, but they pay ' + value + ' million yen in medical fees.';
         value *= -1;
         updateBalance(client, socket, id, value, io, false);
     }
@@ -468,13 +469,13 @@ async function kidnapping(badData, socket, client, io) {
     let resultPhrase = 'You rolled a ' + result;
 
     if (result < 5 || result > 9) {
-        resultPhrase = resultPhrase + '. Unfortunately you are kidnapped and you lose your next turn.';
+        resultPhrase = resultPhrase + '. Unfortunately you is kidnapped and you loses their next turn.';
         loseTurn(socket, client, io);
     } else {
         let value = badData.value;
         let coefficient = await getCoefficient(client, 'penalty', socket.id);
         value *= coefficient;
-        resultPhrase = resultPhrase + '. You pay a ransom of ' + value + ' million yen to be set free.';
+        resultPhrase = resultPhrase + '. You pays a ransom of ' + value + ' million yen to be set free.';
         value *= -1;
         updateBalance(client, socket, socket.id, value, io, false);
     }
@@ -484,10 +485,11 @@ async function kidnapping(badData, socket, client, io) {
 // ASYNC
 // Emits event that the player should lose their next turn. Currently just emits hardcoded 1 turn, but can be changed to be dynamic
 async function loseTurn(socket, client, io) {
+    let room = getCurrentUser(socket.id).room;
     let partnerID = await getPartner(socket, client, io);
-    socket.emit('loseNextTurn', {turns: 1});
+    io.to(room).emit('loseNextTurn', {turns: 1, filler: true});
     if (partnerID !== null) {
-        socket.to(partnerID).emit('lostNextTurn', {turns: 1});
+        io.to(room).emit('lostNextTurn', {turns: 1, filler: false});
     }
 }
 
@@ -584,7 +586,7 @@ async function standardEvent(eventData, socket, client, io, age) {
         discardCard(eventData, socket, client, setType);
     } else if (eventData.id === 'EA6' || eventData.id === 'EO5') {
         choicesArray = [eventData.choice1text, eventData.choice1, eventData.choice2text, eventData.choice2];
-        socket.emit('investChoiceEvent', {choicesArray});
+        io.to(room).emit('investChoiceEvent', {choicesArray});
         socket.on('investChoiceResponse', ({choiceID, input}) => {
             if (choiceID === 'C28') {
                 choicesUpdate(socket, client, io, choiceID, 'invest', input);
@@ -812,7 +814,8 @@ async function getPartner(socket, client, io) {
 // ASYNC
 // Handles the marriage event. Handles the checking of if they have the distrust trait and if they do, it prevents marriage while also removing those trait cards from their arrays
 async function marriageCard(socket, client, io) {
-    socket.emit('getPartnerEvent', {filler: true});
+    let room = getCurrentUser(socket.id).room;
+    io.to(room).emit('getPartnerEvent', {filler: true});
     socket.on('getPartnerResponse', async ({partnerName}) => {
 
         let currentRoom = getCurrentUser(socket.id).room;
@@ -983,8 +986,9 @@ function removeUser(socket, client) {
 
 // Enacts the college event upon exiting child zone
 function college(client, socket, io) {
-    let collegeText = 'You have arrived at adulthood. Would you like to pursue a college education for 10 million yen and a lost turn? You are allowed to go into debt.'
-    socket.emit('collegeResponse', {collegeText});
+    let room = getCurrentUser(socket.id);
+    let collegeText = 'You has arrived at adulthood. Would you like to pursue a college education for 10 million yen and a lost turn? Going into debt is allowed.'
+    io.to(room).emit('collegeResponse', {collegeText});
     socket.on('collegeChoice', ({choice}) => { //Ideally choice is a boolean
         if (choice) {
             choicesUpdate(socket, client, io, 'C30', 'standard', null);
