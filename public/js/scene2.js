@@ -165,6 +165,15 @@ class scene2 extends Phaser.Scene {
             this.blankCard.setInteractive();
         });
 
+        // for marriage card, return the name of the nearest player
+        socket.on('getPartnerEvent', (filler) => {
+            if (playerID === this.turn) {
+                let nearestID = this.getNearestPlayer(this.turn);
+                socket.emit('getPartnerResponse', players[nearestID].name);
+            }
+        });
+
+        // on game end (someone got to the goal card), start scene 3
         socket.on('endGame', (filler) => {
             this.scene.start("endGame");
         });

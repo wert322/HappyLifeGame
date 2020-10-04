@@ -88,6 +88,7 @@ class scene1 extends Phaser.Scene {
     //      childrenCount : number of children the player has
     //      married       : empty string if player is not married, partner's username if married
     //      traits        : an array that contains trait objects (name, description) the player has
+    //      skipTurn      : boolean that stores if player skips their next turn
     updatePlayerList(users) {
         while (players.length > 0) {
             players.pop();
@@ -97,7 +98,7 @@ class scene1 extends Phaser.Scene {
             if (users[i].username === username) {
                 userID = i;
             }
-            let user = {name: users[i].username, playerColor: color, location: 0, balance: 0, childrenCount: 0, married: "", traits: []};
+            let user = {name: users[i].username, playerColor: color, location: 0, balance: 0, childrenCount: 0, married: "", traits: [], skipTurn: false};
             players.push(user);
         }
     }

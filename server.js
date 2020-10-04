@@ -146,6 +146,7 @@ io.on('connection', socket => {
         }
         // code to lock the room here (TO BE IMPLEMENTED LATER)
         io.to(user.room).emit('startGame', true);
+        io.to(user.room).emit('message', formatMessage(botName, `${user.username} has started the game!`));
     });
 
     // Listens for game turn
