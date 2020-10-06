@@ -73,9 +73,9 @@ class scene2 extends Phaser.Scene {
         }
 
         // landed card variables
-        // cardText  : the text displayed on the card
-        // cardIcon  : the icon displayed on the card, currently not working
-        // blankCard : the blank card used on card flip
+        //     cardText  : the text displayed on the card
+        //     cardIcon  : the icon displayed on the card, currently not working
+        //     blankCard : the blank card used on card flip
         this.cardText = this.add.text(0, 450, "", {fontSize: "50px", fontFamily: "Roboto", fill: '#000000', wordWrap: {width: 575}}).setOrigin(0.5);
         this.cardText.depth = 2;
         // this.cardIcon = this.add.text(720, 450, "", {fontSize: "500px", fontFamily: "fontAwesome", fill: '#000000'}).setOrigin(0.5);
@@ -153,6 +153,16 @@ class scene2 extends Phaser.Scene {
             }
         });
 
+        // if the landed card was a investing event, set rollInfo to invest and get all required info stored
+        socket.on('investChoiceEvent', ({choicesArray}) => {
+            rollInfo.type = "invest";
+            if (userID === this.turn) {
+                rollInfo.optionIDs = [choicesArray[1], choicesArray[3]];
+                this.option1ButtonText.setText(choicesArray[0]);
+                this.option2ButtonText.setText(choicesArray[2]);
+            }
+        });
+
         // for non-regular card outcome text, reformat the string for everyone and show in text box
         socket.on('showRegularOutcome', (resultText) => {
             var playerName = players[this.turn].name;
@@ -170,6 +180,26 @@ class scene2 extends Phaser.Scene {
             if (playerID === this.turn) {
                 let nearestID = this.getNearestPlayer(this.turn);
                 socket.emit('getPartnerResponse', players[nearestID].name);
+            }
+        });
+
+        // for add spaces events
+        socket.on('addSpacesNext', (spaces) => {
+            players[this.turn].addToRoll += spaces;
+        });
+
+        // for lose turn events
+        socket.on('loseNextTurn', (turns) => {
+            players[this.turn].skipTurn += turns;
+        });
+
+        // for death event
+        socket.on('deathEvent', (filler) => {
+            players[this.turn].alive = false;
+            if (this.turn === userID) {
+                this.textBox.setText("You died.");
+            } else {
+                this.textBox.setText(players[this.turn].name + " has died.");
             }
         });
 
@@ -418,7 +448,7 @@ class scene2 extends Phaser.Scene {
         this.blankCard.disableInteractive();
         this.blankCard.visible = false;
         this.displayingCard = false;
-        this.turn = (rollInfo.playerID + 1) % players.length;
+        this.turn = getNextPlayer(rollInfo.playerID);
         if (userID === this.turn) {
             this.textBox.setText("Your turn! Press the button to roll the die.");
             this.rollButton.visible = true;
@@ -426,6 +456,19 @@ class scene2 extends Phaser.Scene {
             this.rollButton.setInteractive();
         } else {
             this.textBox.setText("Waiting for " + players[this.turn].name + " to roll...");
+        }
+    }
+
+    // get the ID of the next player, factoring in alive/dead and skip turn
+    getNextPlayer(prevID) {
+        let nextID = (prevID + 1) % players.length;
+        if (!players[nextID].alive) {
+            return this.getNextPlayer(nextID);
+        } else if (players[nextID].skipTurn > 0) {
+            players[nextID].skipTurn--;
+            return this.getNextPlayer(nextID);
+        } else {
+            return nextID;
         }
     }
 
