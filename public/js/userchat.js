@@ -18,8 +18,11 @@ var { username, room } = Qs.parse(location.search, {
 socket.emit('joinTest', {room});
 
 // Join chatroom
-socket.on('joinTestResponse', isFull  => {
-    if (isFull) {
+socket.on('joinTestResponse', ({isFull, roomLocked})  => {
+    if (roomLocked) {
+        alert('This room is already playing a game. Please join a different room.');
+        window.location.replace("lobby.html");
+    } else if (isFull) {
         alert('This room is at maximum capacity. Please join a different room.');
         window.location.replace("lobby.html");
     } else {

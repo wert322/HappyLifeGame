@@ -34,7 +34,8 @@ io.on('connection', socket => {
     // Checks if the room is full and responds with an appropriate signaling event
     socket.on('joinTest', ({room}) => {
         var isFull = (getRoomUsers(room).length > 5);
-        socket.emit('joinTestResponse', isFull);
+        var roomLocked = lockedRoomList.includes(room);
+        socket.emit('joinTestResponse', {isFull, roomLocked});
     });
 
     socket.on('joinRoom', ({username, room}) => {
@@ -95,7 +96,7 @@ io.on('connection', socket => {
                 adjustedRoomList.push(roomList[i]);
             }
         }
-        socket.emit('getSizeOutput', {memberCount, roomList: adjustedRoomList});
+        socket.emit('getSizeOutput', {memberCount, roomList: adjustedRoomList, lockedRooms: lockedRoomList});
     });
 
     // Listens for and returns all users in the room
@@ -144,9 +145,9 @@ io.on('connection', socket => {
         if (!lockedRoomList.includes(user.room)) {
             lockedRoomList.push(user.room);
         }
-        // code to lock the room here (TO BE IMPLEMENTED LATER)
         io.to(user.room).emit('startGame', true);
         io.to(user.room).emit('message', formatMessage(botName, `${user.username} has started the game!`));
+        io.emit('updateRooms', {filler: true});
     });
 
     // Listens for game turn
@@ -155,7 +156,6 @@ io.on('connection', socket => {
         console.log('Card type: '+ cardType + '. Card age: ' + cardAge + '. In servers.');
 
         const user = getCurrentUser(socket.id);
-        // console.log(user);
         io.to(user.room).emit('updateOtherGameUsers', {playerID, dieValue});
         pullCard(cardType, cardAge, client, socket, io);
         // emit info to update player money etc
