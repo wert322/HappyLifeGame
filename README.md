@@ -1,6 +1,8 @@
 # HappyLifeGame
 Cooperative project between Jonathan and Brandon.
 
+This project is still in development but is currently up on https://www.happylifegame.app/.
+
 ## Description 
 Multiplayer, turn-based tabletop game based on the fictional "Happy Life Game" from the Kaguya-sama: Love is War anime/manga series. This is our attempt at bringing it to life in a playable format that can be enjoyed with friends. Creative liberties are taken with card and game design due to insufficient canon information existing.
 
