@@ -1,3 +1,6 @@
+/**
+ * This represents the loading screen for the game.
+ */
 class scene1 extends Phaser.Scene {
     constructor() {
         super("bootGame");
@@ -9,9 +12,9 @@ class scene1 extends Phaser.Scene {
     }
 
     create() {
-            // debug tools
-            this.debugText = this.add.text(0, 0, "", {fontSize: "20px", fontFamily: "Roboto"}).setOrigin(0);
-            this.debugText.visible = debugMode;
+        // debug tools
+        this.debugText = this.add.text(0, 0, "", {fontSize: "20px", fontFamily: "Roboto"}).setOrigin(0);
+        this.debugText.visible = debugMode;
 
         // counter used to update room players
         this.updateRoomCounter = 0;
@@ -37,8 +40,8 @@ class scene1 extends Phaser.Scene {
 
         // update player list when room users changes
         socket.on('roomUsers', ({ room, users }) => {
-            this.sys.game.scale.setGameSize(canvasWidth, canvasHeight);
             this.updatePlayerList(users);
+            this.sys.game.scale.setGameSize(canvasWidth, canvasHeight);
         });
 
         // on game start automatically start the game

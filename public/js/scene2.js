@@ -1,3 +1,6 @@
+/**
+ * This implements the actual game.
+ */
 class scene2 extends Phaser.Scene {
     constructor() {
         super("playGame");
@@ -448,7 +451,7 @@ class scene2 extends Phaser.Scene {
         this.blankCard.disableInteractive();
         this.blankCard.visible = false;
         this.displayingCard = false;
-        this.turn = getNextPlayer(rollInfo.playerID);
+        this.turn = this.getNextPlayer(rollInfo.playerID);
         if (userID === this.turn) {
             this.textBox.setText("Your turn! Press the button to roll the die.");
             this.rollButton.visible = true;

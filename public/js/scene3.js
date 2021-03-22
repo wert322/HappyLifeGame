@@ -1,3 +1,6 @@
+/**
+ * This is the results screen once the game has ended.
+ */
 class scene3 extends Phaser.Scene {
     constructor() {
         super("endGame");
