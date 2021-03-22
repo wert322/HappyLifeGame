@@ -34,7 +34,6 @@ class scene1 extends Phaser.Scene {
                 self.needPlayer(self);
             } else if (!self.started) { // players.length >= 2
                 socket.emit("gameStart", true);
-                this.scene.scene.start("playGame");
             }
         });
 
