@@ -145,9 +145,13 @@ io.on('connection', socket => {
         if (!lockedRoomList.includes(user.room)) {
             lockedRoomList.push(user.room);
         }
-        io.to(user.room).emit('startGame', true);
+        io.to(user.room).emit('roomUsers', {
+            room: user.room,
+            users: getRoomUsers(user.room)
+        });
         io.to(user.room).emit('message', formatMessage(botName, `${user.username} has started the game!`));
         io.emit('updateRooms', {filler: true});
+        io.to(user.room).emit('startGame', true);
     });
 
     // Listens for game turn
