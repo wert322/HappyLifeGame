@@ -23,6 +23,10 @@ class scene2 extends Phaser.Scene {
     }
     
     create() {
+        /**********************************************************************
+         *      Board Setup                                                   *
+         *********************************************************************/
+
         // debug tools
         this.debugText = this.add.text(0, 0, "", {fontSize: "20px", fontFamily: "Roboto"}).setOrigin(0);
         this.debugText.visible = debugMode;
@@ -99,6 +103,10 @@ class scene2 extends Phaser.Scene {
         this.option1Button.on('pointerdown', this.option1ButtonPressed, this);
         this.option2Button.on('pointerdown', this.option2ButtonPressed, this);
 
+
+        /**********************************************************************
+         *      Emits                                                         *
+         **********************************************************************/
         // update all player balances
         socket.on('balanceUpdate', ({usernames, balances}) => {
             for (let i = 0; i < players.length; i++) {
@@ -167,10 +175,10 @@ class scene2 extends Phaser.Scene {
         });
 
         // for non-regular card outcome text, reformat the string for everyone and show in text box
-        socket.on('showRegularOutcome', (resultText) => {
+        socket.on('showRegularOutcome', (result) => {
             var playerName = players[this.turn].name;
             var marriedName = players[this.turn].married;
-            resultText = resultText.replace(/your/gi, playerName + "'s").replace(/you/gi, playerName);
+            var resultText = result.toString().replace(/your/gi, playerName + "'s").replace(/you/gi, playerName);
             if (marriedName !== "") {
                 resultText = resultText.replace(/partnername/g, marriedName);
             }
@@ -239,7 +247,12 @@ class scene2 extends Phaser.Scene {
         }
     }
     
-    // sets up the card orderings and returns an array of cards
+    /**
+     * Initializes a list containing the correct age, type, coordinates, and rotation for each
+     * card on the board.
+     * 
+     * @returns the list of card information.
+     */
     setupCards() {
         let cardList = [{age:"Child", type:"Start", landed: true, xpos: 150, ypos: 750, anglepos: 0}];
         for (let i = 1; i <= cardCount; i++) {
@@ -280,7 +293,11 @@ class scene2 extends Phaser.Scene {
         return cardList;
     }
 
-    // sets up the cards on the board
+    /**
+     * Sets up the cards on the board.
+     * 
+     * @returns a list of all the cards
+     */
     setupBoard() {
         this.startCard = this.add.sprite(150, 750, 'cardStart');
         this.startCard.setScale(0.175);
@@ -300,7 +317,14 @@ class scene2 extends Phaser.Scene {
         return allCards;
     }
 
-    // acts out a turn given inputted player and roll amount
+    /**
+     * Acts out a turn given inputted player and roll amount.
+     * 
+     * @param playerID the player ID.
+     * @param dieValue the rolled amount.
+     * @param cardDescription the landed card description.
+     * @param iconCode the landed card icon code.D
+     */
     simulateTurn(playerID, dieValue, cardDescription, iconCode) {
         var newPlayerLocation = this.getLandedCardLocation(players[playerID].location, dieValue);
         this.cardList[newPlayerLocation].landed = true;
@@ -309,7 +333,20 @@ class scene2 extends Phaser.Scene {
         this.moveByOne("", "", this, playerPiece, playerID, newPlayerLocation, landedCardIndex, cardDescription, iconCode);
     }
 
-    // moves the player up by one card
+    /**
+     * Recursively moves the player icon up one card location at a time via animation,
+     * until the player reaches the specified index.
+     * 
+     * @param tween animation.
+     * @param targets animation target object.
+     * @param self this.
+     * @param playerPiece the player's icon.
+     * @param playerID the player ID.
+     * @param newPlayerLocation the current card index.
+     * @param landedCardIndex the destination card index.
+     * @param cardDescription the landed card description.
+     * @param iconCode the landed card icon code.
+     */
     moveByOne(tween, targets, self, playerPiece, playerID, newPlayerLocation, landedCardIndex, cardDescription, iconCode) {
         if (players[playerID].location === newPlayerLocation) {
             self.displayLandedCard(self, landedCardIndex, cardDescription, iconCode);
@@ -328,14 +365,29 @@ class scene2 extends Phaser.Scene {
         }
     }
 
-    // displays the card at inputted index
+    /**
+     * Displays the card at inputted container index.
+     * 
+     * @param self this.
+     * @param index the index of the card that's being animated.
+     * @param cardDescription the landed card description.
+     * @param iconCode the landed card icon code.
+     */
     displayLandedCard(self, index, cardDescription, iconCode) {
         let card = self.allCardsContainer.getAt(index);
         self.allCardsContainer.bringToTop(card);
         self.animateLandedCard(self, card, cardDescription, iconCode);
     }
 
-    // animation to move card to center of screen
+    /**
+     * Animates the card by moving it from its original location to the center of
+     * the screen. It also rotates if needed and resizes itself while moving.
+     * 
+     * @param self this.
+     * @param card the card that's being animated.
+     * @param cardDescription the landed card description.
+     * @param iconCode the landed card icon code.
+     */
     animateLandedCard(self, card, cardDescription, iconCode) {
         card.depth = 1;
         self.tweens.add({
@@ -353,7 +405,16 @@ class scene2 extends Phaser.Scene {
         });
     }
 
-    // flips the landed card to halfway
+    /**
+     * Flips the landed card from center of screen and unflipped to halfway flipped.
+     * 
+     * @param tween animation.
+     * @param targets animation target object.
+     * @param self this.
+     * @param card the card that's being animated.
+     * @param cardDescription the landed card description.
+     * @param iconCode the landed card icon code.
+     */
     flipLandedCard(tween, targets, self, card, cardDescription, iconCode) {
         self.tweens.add({
             targets: card,
@@ -367,7 +428,16 @@ class scene2 extends Phaser.Scene {
         });
     }
 
-    // flips the landed card all the way, along with text
+    /**
+     * Flips the landed card from halfway to all the way, while showing the card text.
+     * 
+     * @param tween animation.
+     * @param targets animation target object.
+     * @param self this.
+     * @param card the card that's being animated.
+     * @param cardDescription the landed card description.
+     * @param iconCode the landed card icon code.
+     */
     flipLandedCard2(tween, targets, self, card, cardDescription, iconCode) {
         card.destroy();
         // card text
@@ -407,7 +477,15 @@ class scene2 extends Phaser.Scene {
         });
     }
 
-    // finishes up the card flip animation and sets up the user for an emit depending if it is a standard card or not
+    /**
+     * Finishes up the card flip animation by updating several variables and sets
+     * up the user for an emit depending if it is a standard card or not.
+     * 
+     * @param tween animation.
+     * @param targets animation target object.
+     * @param self this.
+     * @param cardDescription the landed card description.
+     */
     cardAnimationEnd(tween, targets, self, cardDescription) {
         self.displayingCard = true;
         if (rollInfo.type === "regular") {
@@ -417,7 +495,15 @@ class scene2 extends Phaser.Scene {
         }
     }
 
-    // returns the container index of the landed card in reference to the remaining cards
+    /**
+     * Returns the container index of the landed card in reference to the remaining
+     * cards. Differs from getLandedCardLocation since it gets the index in the
+     * container of cards (which changes when cards are landed on and removed),
+     * not the index of the card number.
+     * 
+     * @param {*} cardLocation 
+     * @returns 
+     */
     getLandedCardIndex(cardLocation) {
         let counter = 1;
         for (let i = 1; i < cardLocation; i++) {
@@ -428,7 +514,16 @@ class scene2 extends Phaser.Scene {
         return counter;
     }
 
-    // returns the location of the landed card in reference to all the cards
+    /**
+     * Returns the location of the landed card in reference to all the cards.
+     * Differs from getLandedCardIndex since it gets the card number, not the
+     * index in the container of cards (which changes when cards are landed on
+     * and removed).
+     * 
+     * @param location the starting card location of the user.
+     * @param dieRoll the value the player rolled.
+     * @returns the ending card location of the user.
+     */
     getLandedCardLocation(location, dieRoll) {
         while (dieRoll > 0) {
             if (!this.cardList[location + 1].landed) {
@@ -439,12 +534,18 @@ class scene2 extends Phaser.Scene {
         return location;
     }
 
-    // rolls a die and returns the value (1 to 6)
+    /**
+     * Rolls a die.
+     * @returns an integer randomly selected from 1 to 6.
+     */
     rollDie() {
         return Math.floor(Math.random() * 6 + 1);
     }
 
-    // sets up the next turn (hides blank card, increments turn, displays roll text)
+    /**
+     * Sets up the next turn. This hides the blank card, increments the turn, and displays
+     * the roll text for whoever is next up.
+     */
     setupNextTurn() {
         this.cardText.setText("");
         // self.cardIcon.setText("");
@@ -462,7 +563,13 @@ class scene2 extends Phaser.Scene {
         }
     }
 
-    // get the ID of the next player, factoring in alive/dead and skip turn
+    /**
+     * Get the ID of the next player. This factors in information such as a player being
+     * dead or having to skip a turn.
+     * 
+     * @param prevID the id of the player who just went on the previous turn.
+     * @returns the id of the player who's turn is next.
+     */
     getNextPlayer(prevID) {
         let nextID = (prevID + 1) % players.length;
         if (!players[nextID].alive) {
@@ -475,7 +582,12 @@ class scene2 extends Phaser.Scene {
         }
     }
 
-    // format player text for side text info
+    /**
+     * Format player text for side text info.
+     * 
+     * @param index the index of the player based off the players list.
+     * 
+    */
     formatPlayerText(index) {
         let text = "     " + players[index].name + "\nBalance: ";
         let balance = "";
@@ -497,7 +609,13 @@ class scene2 extends Phaser.Scene {
         return text;
     }
 
-    // get nearest player to inputted player ID
+    /**
+     * Finds and returns the ID of the nearest unmarried player to the inputted player
+     * (based on card location).
+     * 
+     * @param playerID the ID of the player who rolled.
+     * @returns ID of the player who is the closest to the character.
+     */
     getNearestPlayer(playerID) {
         playerDistance = new Array(players.length);
         for (let i = 0; i < players.length; i++) {
@@ -512,7 +630,10 @@ class scene2 extends Phaser.Scene {
         return nearestID;
     }
 
-    // when roll button is pressed, hide it, get roll value, and send the info to everyone
+    /**
+     * When the roll button is pressed, hide it, get the roll value, and send the
+     * result to everyone in the room.
+     */
     rollButtonPressed() {
         this.rollButtonText.visible = false;
         this.rollButton.visible = false;
@@ -531,7 +652,12 @@ class scene2 extends Phaser.Scene {
         }
     }
 
-    // if two choice card was landed, set up the screen with the options
+    /**
+     * If a two choice card was landed on and it's the user's turn, set up the two options
+     * buttons.
+     * 
+     * @param self this context.
+     */
     twoChoice(self) {
         self.textBox.setText("");
         self.option1Button.visible = true;
@@ -542,19 +668,25 @@ class scene2 extends Phaser.Scene {
         self.option2Button.setInteractive();
     }
 
-    // if option 1 was pressed send that to the server and fix the screen
+    /**
+     * If option 1 was pressed, send that to the server and remove the buttons.
+     */
     option1ButtonPressed() {
         this.hide2OptionButtons();
         socket.emit('twoChoiceResponse', {choiceID:rollInfo.optionIDs[0]});
     }
 
-    // if option 2 was pressed send that to the server and fix the screen
+    /**
+     * If option 2 was pressed, send that to the server and remove the buttons.
+     */
     option2ButtonPressed() {
         this.hide2OptionButtons();
         socket.emit('twoChoiceResponse', {choiceID:rollInfo.optionIDs[1]});
     }
 
-    // after two choice option is picked, clean up the screen by hiding two buttons
+    /**
+     * Hides and disables the two options buttons.
+     */
     hide2OptionButtons() {
         this.option1Button.visible = false;
         this.option1ButtonText.visible = false;

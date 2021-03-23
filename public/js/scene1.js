@@ -82,17 +82,11 @@ class scene1 extends Phaser.Scene {
         }
     }
 
-    // Adds room users to player list
-    //      name          : the player's username
-    //      playerColor   : the player color (used for player icon)
-    //      location      : card location (0 means startcard, 1 means 1st card, etc)
-    //      balance       : amount a user has in millions of yen
-    //      childrenCount : number of children the player has
-    //      married       : empty string if player is not married, partner's username if married
-    //      traits        : an array that contains trait objects (name, description) the player has
-    //      addToRoll     : number that stores number added to their roll on their next turn
-    //      skipTurn      : number that stores number of turns the player skips
-    //      alive         : boolean that stores if player is alive
+    /**
+     * Adds room users and default parameters to players list.
+     * 
+     * @param users list of usernames sent from the server.
+     */
     updatePlayerList(users) {
         while (players.length > 0) {
             players.pop();
@@ -108,7 +102,11 @@ class scene1 extends Phaser.Scene {
         }
     }
 
-    // if not enough players in the room, show the message
+    /**
+     * If there aren't enough players in the room, show the not enough players message.
+     * 
+     * @param self this context.
+     */
     needPlayer(self) {
         self.notEnoughPlayers.alpha = 1;
         self.tweens.add({
